@@ -32,14 +32,23 @@ The alert was triggered due to multiple failed logins from the same user, indica
 ## Phase 3: Mitigation
 
 - **Action Taken**: Temporarily locked the account after 10 failed login attempts.
-- **Next Steps**: Monitor for additional failed login attempts or patterns that suggest a continuation of the attack.
+- **Next Steps**: Monitor for additional failed login attempts or patterns suggesting continuation of the attack.
+
+### New Mitigation Measures:
+- **Blocked the IP** `20.21.211.28` temporarily to prevent further brute force attempts.
+- 
+- ## Phase 4: Hardening
 
 - ## Phase 4: Hardening
 
 - **Security Measures Implemented**:
   - Enabled **rate-limiting** for login attempts to prevent further brute force attacks.
-  - **Enforced MFA** (Multi-Factor Authentication) for all users.
-  - **Increased password complexity** requirements for user accounts.
+  - **Enforced MFA** for all users.
+  - Increased **password complexity** requirements for all accounts.
+
+### Additional Hardening Measures:
+- **Applied geofencing restrictions** to only allow login from predefined regions (e.g., Ad Dawhah).
+- **Enabled behavioral analytics** to detect unusual login patterns or device anomalies.
  
   - ## Phase 5: Decision
 

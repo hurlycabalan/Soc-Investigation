@@ -36,8 +36,6 @@ The alert was triggered due to multiple failed logins from the same user, indica
 
 ### New Mitigation Measures:
 - **Blocked the IP** `20.21.211.28` temporarily to prevent further brute force attempts.
-- 
-- ## Phase 4: Hardening
 
 - ## Phase 4: Hardening
 

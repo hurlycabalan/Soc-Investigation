@@ -1,5 +1,5 @@
 ## Screenshot 1: Phishing Email Content
-![Phishing Email Screenshot](https://github.com/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Email_Screenshot.jpg?raw=true)
+![Phishing Email Screenshot](images/phishing/Email_Screenshot.jpg)
 
 **Description**:
 - **Subject Line**: "Immediate Action Required: Verify Your Account Now" — This subject line creates a sense of urgency, a common phishing tactic.
@@ -9,7 +9,7 @@
 ---
 
 ## Screenshot 2: Hovered Link Analysis
-![Hover Link](https://github.com/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Hoover_Link.jpg?raw=true)
+![Hover Link](images/phishing/Hoover_Link.jpg)
 
 **Description**:
 - **Link Inspection**: Upon hovering over the link **"Click here to verify your account"**, it leads to a **fake URL** (`http://verify-account.com`), which is an indication of a phishing attempt.
@@ -18,8 +18,16 @@
 ---
 
 ## Screenshot 3: Attachment Macro Warning
-![Macro Warning Screenshot](https://github.com/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Macro_Warning.jpg?raw=true)
+![Macro Warning Screenshot](images/phishing/Macro_Warning.jpg)
 
 **Description**:
 - **Attachment**: The email contains an attachment titled `Account_Review_with_Macro.docx`, which is a common tactic used to distribute malicious payloads.
 - **Macro Warning**: When opening the attachment, a **macro warning** appears, urging the user to enable macros. Enabling macros would trigger malicious behavior, potentially compromising the system.
+
+---
+
+## Screenshot 4: Additional Message Warning
+![Message Warning Screenshot](images/phishing/Message_Warning.png)
+
+**Description**:
+- **Warning Message**: This screenshot shows the **security warning** when downloading the attachment, which alerts the user about potential risks from macros.

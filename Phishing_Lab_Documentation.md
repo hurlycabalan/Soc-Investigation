@@ -10,4 +10,5 @@
 
 ### Phishing Email Screenshot
 ![Phishing Email Screenshot](images/phishing/Screenshot%20(26).png)
+
 - Observed the prompt to enable macros (this would trigger the malicious script if enabled).

@@ -14,7 +14,7 @@ This document provides an overview of the phishing email investigation conducted
 ---
 
 ## Screenshot 2: Hovered Link Analysis
-![Hovered Link Screenshot](images/phishing/images/phishing/images/Hoover_ Link.jpg)
+
 
 **Description**:
 - **Link Inspection**: Upon hovering over the link **"Click here to verify your account"**, it leads to a **fake URL** (`http://verify-account.com`), which is an indication of a phishing attempt.

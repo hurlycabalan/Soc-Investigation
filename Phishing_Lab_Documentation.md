@@ -9,8 +9,7 @@
 - The document contains macros intended to execute malicious code upon enabling them.
 
 ### Phishing Email Screenshot
-![Phishing Email Screenshot](images/phishing/Screenshot_1.png)
-
+images/phishing/images/phishing/images/Screenshot (26).png
 ### Actions Taken
 - Downloaded the file.
 - Observed the prompt to enable macros (this would trigger the malicious script if enabled).

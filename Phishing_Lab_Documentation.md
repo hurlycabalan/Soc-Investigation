@@ -19,7 +19,7 @@ This document provides an overview of the phishing email investigation conducted
 **Description**:
 - **Link Inspection**: Upon hovering over the link **"Click here to verify your account"**, it leads to a **fake URL** (`http://verify-account.com`), which is an indication of a phishing attempt.
 - **Suspicious Behavior**: The URL does not correspond to the legitimate Microsoft domain and is likely designed to steal credentials.
-
+![Hovered Link Screenshot](images/phishing/images/phishing/images/Hoover_ Link.jpg)
 ---
 
 ## Screenshot 3: Attachment Macro Warning

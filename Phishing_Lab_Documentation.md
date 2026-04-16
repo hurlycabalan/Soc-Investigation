@@ -4,7 +4,7 @@
 This document provides an overview of the phishing email investigation conducted to identify suspicious email behavior and actions. The investigation covers indicators such as email sender, subject line, attachment, and links.
 
 ## Screenshot 1: Phishing Email Content
-![Phishing Email Screenshot](images/phishing/images/phishing/images/Email_Screenshot.jpg)
+![Phishing Email Screenshot](images/phishing/Email_Screenshot.jpg)
 
 **Description**:
 - **Subject Line**: "Immediate Action Required: Verify Your Account Now" — This subject line creates a sense of urgency, a common phishing tactic.
@@ -14,15 +14,16 @@ This document provides an overview of the phishing email investigation conducted
 ---
 
 ## Screenshot 2: Hovered Link Analysis
-
+![Hover Link](https://github.com/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Hoover_Link.jpg?raw=true)
 
 **Description**:
 - **Link Inspection**: Upon hovering over the link **"Click here to verify your account"**, it leads to a **fake URL** (`http://verify-account.com`), which is an indication of a phishing attempt.
 - **Suspicious Behavior**: The URL does not correspond to the legitimate Microsoft domain and is likely designed to steal credentials.
-## Screenshot: Hover Link Analysis
-![Hover Link](https://github.com/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Hoover_Link.jpg?raw=true)
+
+---
+
 ## Screenshot 3: Attachment Macro Warning
-![Macro Warning Screenshot](images/phishing/images/phishing/images/Macro_Warning.jpg)
+![Macro Warning Screenshot](images/phishing/Macro_Warning.jpg)
 
 **Description**:
 - **Attachment**: The email contains an attachment titled `Account_Review_with_Macro.docx`, which is a common tactic used to distribute malicious payloads.

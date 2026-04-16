@@ -1,9 +1,16 @@
-## Phishing Email Scenario
+## Phishing Email Simulation
 
-**Subject:** "Urgent: Your Account Has Been Suspended"
+### Scenario
+- **Subject:** "Urgent: Your Account Has Been Suspended"
+- **Description:** This is a phishing email simulating an urgent action request. The email asks the user to download an attached document to verify their account due to suspicious activity.
 
-This email simulated a phishing attack, pretending to be a security notification from the company, informing the user that their account has been suspended.
+### Attachment:
+- **File Name:** `Account_Review_with_Macro.docx`
+- The document contains macros intended to execute malicious code upon enabling them.
 
-**Attachment:** `Account_Review_with_Macro.docm`
+### Phishing Email Screenshot
+![Phishing Email Screenshot](images/phishing/Screenshot_1.png)
 
-The attachment is a Word document containing a malicious macro designed to trick the user into enabling macros and executing the code.
+### Actions Taken
+- Downloaded the file.
+- Observed the prompt to enable macros (this would trigger the malicious script if enabled).

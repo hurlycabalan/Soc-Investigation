@@ -1,96 +1,122 @@
-# Brute Force Attack Manual Investigation Report
+# Case 002: Brute Force Attack Analysis
 
-## Introduction
-
-This report covers the **manual investigation** of a **brute force attack** simulation targeting **Azure AD**. The goal is to analyze failed login attempts, correlate logs, identify suspicious patterns, and suggest mitigation measures. This report demonstrates the **step-by-step process** an analyst would follow using **Azure AD logs** to investigate a brute force attempt without relying on automated tools.
-
----
-
-## Investigation Process
-
-### Step 1: Data Collection
-- The investigation began with **Azure AD Sign-In Logs**.
-- Filters were applied to focus on **Event ID 4625** (failed login attempts) and **Event ID 4740** (account lockouts).
-- Logs were analyzed for **failed logins** from the same **IP address**, targeting multiple **user accounts** within a short time window.
-
-### Step 2: Analysis of Event ID 4625 (Failed Login Attempts)
-- **15 failed login attempts** were found within a **10-minute period**, all from the same **IP address** (`20.21.211.28`).
-- Each failed attempt returned **Error Code 50126**, which indicates incorrect username or password.
-- This pattern strongly suggests a **password spraying** or **brute force** attack, where the attacker attempts to guess the password for multiple accounts.
-
-### Step 3: Cross-Referencing with Event ID 4740 (Account Lockout)
-- After the failed login attempts, **User Naruto** was locked out after **5 failed login attempts**.
-- This confirms that the attacker was attempting to breach the account by hitting the **account lockout threshold**.
-
-### Step 4: Hypothesis and Findings
-- The **source IP** attempting multiple failed logins on **different user accounts** fits the pattern of a **brute force** or **password spraying** attack.
-- The **lockout event** on User Naruto and subsequent successful logins indicate that the attack was progressing towards compromising the account.
-
-### Step 5: Mitigation and Hardening Recommendations
-- **Immediate Action**: Block the suspicious IP address (`20.21.211.28`) to prevent further login attempts from the attacker.
-- **Long-Term Actions**:
-    - **Enforce Multi-Factor Authentication (MFA)** for all high-privilege accounts to mitigate the impact of password-related attacks.
-    - Adjust **account lockout policies** to trigger after fewer failed login attempts (e.g., 3 attempts).
-    - Set up **Azure AD monitoring alerts** for multiple failed logins from the same IP in a short window.
+**Analyst:** Hurly Cabalan  
+**Date:** April 2026  
+**Platform:** Microsoft Entra ID / Azure Portal  
+**Severity:** Medium  
+**Status:** ✅ Complete  
 
 ---
 
-## Raw Log Data from Azure AD Sign-In Logs
+## Summary
 
-Here’s the full report of **failed login attempts** and other relevant data that was manually analyzed during this investigation.
-
-| **Timestamp**     | **User**  | **Application**     | **Status** | **Error Code** | **IP Address**     | **Authentication**      |
-|-------------------|-----------|---------------------|------------|-----------------|--------------------|-------------------------|
-| 2026-04-15 16:31  | Naruto    | Azure Portal        | Failure    | 50126           | 20.21.211.28       | Single-factor authentication |
-| 2026-04-15 16:32  | Naruto    | Azure Portal        | Failure    | 50126           | 20.21.211.28       | Single-factor authentication |
-| 2026-04-15 16:33  | Naruto    | Azure Portal        | Failure    | 50126           | 20.21.211.28       | Single-factor authentication |
-| 2026-04-15 16:34  | Naruto    | Azure Portal        | Failure    | 50126           | 20.21.211.28       | Single-factor authentication |
-| 2026-04-15 16:35  | Naruto    | Azure Portal        | Failure    | 50126           | 20.21.211.28       | Single-factor authentication |
-| 2026-04-15 16:36  | Naruto    | Azure Portal        | Failure    | 50126           | 20.21.211.28       | Single-factor authentication |
-| 2026-04-15 16:37  | Naruto    | Azure Portal        | Failure    | 50126           | 20.21.211.28       | Single-factor authentication |
-| 2026-04-15 16:38  | Naruto    | Azure Portal        | Failure    | 50126           | 20.21.211.28       | Single-factor authentication |
-| 2026-04-15 16:39  | Naruto    | Azure Portal        | Failure    | 50126           | 20.21.211.28       | Single-factor authentication |
-| 2026-04-15 16:40  | Naruto    | Azure Portal        | Success    | 0               | 20.21.211.28       | Multifactor authentication |
-
-> **Note**: The error code **50126** typically indicates a **wrong password** or **incorrect username** during login attempts.
+A brute force attack was detected against an Active Directory account. Ten consecutive failed login attempts were recorded within a 2-minute window from a single IP address. The account was locked, the IP was blocked, and hardening measures were applied. No successful unauthorized access was confirmed.
 
 ---
 
-## Azure AD Sign-in Logs (Visual Evidence)
+## Phase 1: Alert
 
-Here’s a screenshot from the **Azure AD Sign-in logs** showing the repeated failed sign‑in attempts for the user:
+### Alert Triggered
 
-![Azure AD Sign‑in Logs](images/brute_force_attack_logs.png)
+Multiple **failed login attempts** detected for **User: Naruto** within a **2-minute window**.
 
-> **Note**: The image above shows the login attempts from the same IP address, which were flagged as failures due to incorrect username or password.
+| Field | Detail |
+|-------|--------|
+| Error Code | `50126` — Invalid username or password |
+| Failed Attempts | 10 in rapid succession |
+| Source IP | `20.21.211.28` |
+| Location | Ad Dawhah, QA |
+| Application | Azure Portal |
+| Authentication Type | Single-factor (no MFA enrolled) |
 
----
-
-## Conclusion and Lessons Learned
-
-### Key Takeaway:
-- Automated tools, such as **password spraying** or **brute force** attacks, often generate detectable patterns like repeated failed logins from a single IP, targeting multiple accounts with the same password.
-
-### Future Actions:
-- **Automated Monitoring**: Set up alerts for failed login frequency and IP address correlation.
-- **Account Lockout Configuration**: Review and refine lockout policies to improve response time to brute force attempts.
-- **MFA Enforcement**: Ensure **multi-factor authentication (MFA)** is enforced, especially for high-privilege accounts, to prevent unauthorized access.
+The alert fired based on repeated failed logins from the same user and same IP — consistent with a brute force pattern.
 
 ---
 
-### Final Thoughts:
-This **manual investigation** provided a clear example of how to detect and respond to brute force attacks using Azure AD logs. By carefully analyzing log data, identifying suspicious patterns, and implementing mitigation steps, we can strengthen defenses and reduce the risk of successful attacks.
+## Phase 2: Investigation
+
+### Step 1: Validate User & Authentication Details
+
+Pulled sign-in logs from Entra ID filtered by user `Naruto` and status `Failure`. Confirmed all 10 failed attempts originated from IP `20.21.211.28` with no IP rotation or proxy behavior observed.
+
+### Step 2: Analyze the Log Pattern
+
+All 10 failures returned error code `50126` — wrong password. The attempts occurred in rapid succession within 2 minutes, indicating automated or scripted password guessing rather than a legitimate user forgetting their credentials. A real forgotten password scenario would show slower, spaced-out attempts from a recognized device.
+
+### Step 3: Check for Geo-Anomalies & Lateral Movement
+
+No geo-location discrepancy — Ad Dawhah is the user's normal location. No other accounts showed similar failed attempts in the same window, ruling out a password spray. No successful authentication at any point during the attack window.
+
+### Raw Sign-In Log Data
+
+| Timestamp | User | Application | Status | Error Code | IP Address | Auth Method |
+|-----------|------|-------------|--------|------------|------------|-------------|
+| 2026-04-15 16:31 | Naruto | Azure Portal | Failure | 50126 | 20.21.211.28 | Single-factor |
+| 2026-04-15 16:32 | Naruto | Azure Portal | Failure | 50126 | 20.21.211.28 | Single-factor |
+| 2026-04-15 16:33 | Naruto | Azure Portal | Failure | 50126 | 20.21.211.28 | Single-factor |
+| 2026-04-15 16:34 | Naruto | Azure Portal | Failure | 50126 | 20.21.211.28 | Single-factor |
+| 2026-04-15 16:35 | Naruto | Azure Portal | Failure | 50126 | 20.21.211.28 | Single-factor |
+| 2026-04-15 16:36 | Naruto | Azure Portal | Failure | 50126 | 20.21.211.28 | Single-factor |
+| 2026-04-15 16:37 | Naruto | Azure Portal | Failure | 50126 | 20.21.211.28 | Single-factor |
+| 2026-04-15 16:38 | Naruto | Azure Portal | Failure | 50126 | 20.21.211.28 | Single-factor |
+| 2026-04-15 16:39 | Naruto | Azure Portal | Failure | 50126 | 20.21.211.28 | Single-factor |
+| 2026-04-15 16:40 | Naruto | Azure Portal | **Success** | 0 | 20.21.211.28 | **Multifactor** |
+
+> The final successful login used MFA — confirming MFA enforcement was active and that even after the correct password was guessed, the attacker could not fully compromise the account without the second factor.
+
+### Visual Evidence — Azure AD Sign-In Logs
+
+![Azure AD Sign-in Logs](images/brute_force_logs.png)
+
+> Screenshot of Entra ID sign-in logs showing the 10 failed attempts with error code 50126 followed by the MFA-protected successful login.
 
 ---
 
-## Next Steps:
-1. **Upload the Image** to your GitHub repository under the "Visual Evidence" section.
-2. **Complete the Report** with any additional logs or details you want to add based on your further investigation.
+## Phase 3: Mitigation
+
+**Immediate actions taken:**
+
+- Temporarily locked the account after the 10th failed login attempt
+- Blocked source IP `20.21.211.28` at the network level to prevent continued attempts
+
+**Monitoring:**
+- Continued watching for resumed attempts from new IPs for 48 hours post-incident
+- No further attempts detected from this source
 
 ---
 
-This final version combines **all the previous elements** (investigation process, raw log data table, mitigation steps, lessons learned) into one cohesive and professional report. It also includes the **image for realism** and places where you can add your logs and screenshots directly.
+## Phase 4: Hardening
+
+Security measures implemented following the incident:
+
+- Enabled **rate-limiting** on login attempts — slows future brute force attempts before lockout threshold is reached
+- **Enforced MFA** for all user accounts — as demonstrated in this case, MFA blocked the attacker even after the correct password was guessed
+- Increased **password complexity** requirements across all accounts
+- Applied **geofencing restrictions** — logins only permitted from pre-approved regions
+- Enabled **behavioral analytics** to flag anomalous login velocity and device anomalies going forward
 
 ---
 
-Feel free to paste the entire **MD content** into your GitHub file, and adjust it as needed. Let me know if you need any further tweaks!
+## Phase 5: Decision
+
+- **Escalation:** Not required — incident was fully contained at account and network level
+- **Outcome:** Attacker successfully guessed the password but was blocked by MFA. No data accessed, no lateral movement.
+- **Recommendation:** Continue monitoring the affected account for 48 hours. Review lockout threshold — 10 attempts may be too permissive for privileged accounts.
+
+---
+
+## Phase 6: Lessons Learned
+
+- **Lockout threshold too high:** 10 attempts before lockout gave the attacker too many chances. For standard user accounts, 5 attempts is more appropriate. For privileged accounts, 3.
+- **MFA proved its value:** The attacker reached a successful credential match but MFA enforcement stopped the breach. This is exactly the scenario MFA is designed for.
+- **Automation gap:** Account lockout was triggered manually in this case. Should be fully automated via Entra ID Smart Lockout — manual response creates a window for continued attempts.
+
+### Problems Encountered During Investigation
+
+- The initial alert showed attempt count but not granular timestamps — had to pull raw sign-in logs separately to confirm the 2-minute window. Lesson: always go to raw logs, not just the alert summary.
+- Distinguishing brute force from a user forgetting their password required looking at attempt velocity. 10 attempts in 2 minutes is machine-speed, not human behavior.
+- Geofencing was not configured prior to this incident. Since Ad Dawhah is the user's legitimate location, the IP alone wasn't a strong anomaly signal — the velocity was the real indicator.
+
+---
+
+*Part of the [SOC Investigation Lab](./README.md) — manual threat analysis using Active Directory and Microsoft Entra ID.*

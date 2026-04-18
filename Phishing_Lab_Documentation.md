@@ -23,7 +23,7 @@ Manual analysis of a simulated phishing email targeting a corporate user. Invest
 
 ### Screenshot: Phishing Email Content
 
-![Phishing Email Screenshot](Email_Screenshot.jpg)
+![Phishing Email Screenshot](images/phishing/images/phishing/images/Email_Screenshot.jpg)
 
 > **Note for image:** If image doesn't display, ensure `Email_Screenshot.jpg` is uploaded to `images/phishing/` folder in this repo.
 

@@ -26,7 +26,7 @@ The email arrived with subject line **"Immediate Action Required: Verify Your Ac
 
 **Body content:** Instructs recipient to click a link to verify their account immediately. Generic greeting, no account number reference, tone designed to create fear of account suspension.
 
-![Phishing Email Screenshot](images/phishing/Email_Screenshot.jpg)
+[![Phishing Email Screenshot](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Email_Screenshot.jpg)](/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Email_Screenshot.jpg)
 
 ---
 
@@ -40,7 +40,7 @@ Hovered over the **"Click here to verify your account"** button without clicking
 - Generic domain name designed to appear legitimate at a glance
 - Likely a credential harvesting page built to mimic Microsoft login portal
 
-![Hovered Link Revealing Fake URL](images/phishing/Hoover_Link.jpg)
+[![Hover Link Analysis](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Hoover_Link.jpg)](/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Hoover_Link.jpg)
 
 ---
 
@@ -72,7 +72,7 @@ Upon opening, Microsoft Word immediately displayed a security warning prompting 
 - Payload could include a reverse shell, credential stealer, ransomware dropper, or C2 beacon
 - No antivirus detection at document open stage — only triggers post-execution
 
-![Macro Warning on Attachment Open](images/phishing/Macro_Warning.jpg)
+[![Macro Warning](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Macro_Warning.jpg)](/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Macro_Warning.jpg)
 
 ---
 
@@ -80,7 +80,7 @@ Upon opening, Microsoft Word immediately displayed a security warning prompting 
 
 When the attachment was downloaded, the OS flagged the file as potentially unsafe before it opened. This automated defense is insufficient on its own — users routinely override it, especially when the email appears to come from a trusted brand.
 
-![OS Security Warning on Download](images/phishing/Message_Warning.png)
+[![Message Warning](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Message_Warning.png)](/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Message_Warning.png)
 
 ---
 

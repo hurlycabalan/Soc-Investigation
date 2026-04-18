@@ -23,7 +23,7 @@ Manual analysis of a simulated phishing email targeting a corporate user. Invest
 
 ### Screenshot: Phishing Email Content
 
-![Phishing Email Screenshot](images/phishing/Email_Screenshot.jpg)
+![Phishing Email Screenshot](Email_Screenshot.jpg)
 
 > **Note for image:** If image doesn't display, ensure `Email_Screenshot.jpg` is uploaded to `images/phishing/` folder in this repo.
 
@@ -40,7 +40,7 @@ Manual analysis of a simulated phishing email targeting a corporate user. Invest
 
 ### Screenshot: Hovered Link
 
-![Hover Link Analysis](images/phishing/Hoover_Link.jpg)
+![Hover Link Analysis](images/phishing/images/phishing/images/Hoover_ Link.jpg)
 
 ---
 
@@ -66,7 +66,7 @@ Manual analysis of a simulated phishing email targeting a corporate user. Invest
 
 ### Screenshot: Macro Warning
 
-![Macro Warning](images/phishing/Macro_Warning.jpg)
+![Macro Warning](images/phishing/images/phishing/images/Macro_Warning.jpg)
 
 ---
 
@@ -79,7 +79,7 @@ Manual analysis of a simulated phishing email targeting a corporate user. Invest
 
 ### Screenshot: Download Warning
 
-![Message Warning](images/phishing/Message_Warning.png)
+![Message Warning](images/phishing/images/phishing/images/Message_Warning.png)
 
 ---
 

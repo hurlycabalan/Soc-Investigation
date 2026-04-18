@@ -33,7 +33,7 @@ The email arrived with the subject line **"Immediate Action Required: Verify You
 
 ### Screenshot — Phishing Email
 
-[![Phishing Email Screenshot](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Email_Screenshot.jpg)](https://github.com/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Email_Screenshot.jpg)
+[![Phishing Email Screenshot](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Email_Screenshot.jpg)](images/phishing/images/phishing/images/Email_Screenshot.jpg)
 
 ---
 

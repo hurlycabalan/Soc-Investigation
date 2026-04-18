@@ -30,7 +30,7 @@ This report covers the **manual investigation** of a **brute force attack** simu
 - **Immediate Action**: Block the suspicious IP address (`20.21.211.28`) to prevent further login attempts from the attacker.
 - **Long-Term Actions**:
     - **Enforce Multi-Factor Authentication (MFA)** for all high-privilege accounts to mitigate the impact of password-related attacks.
-    - Adjust **account lockout policies** to trigger lockouts after fewer failed login attempts (e.g., 3 attempts).
+    - Adjust **account lockout policies** to trigger after fewer failed login attempts (e.g., 3 attempts).
     - Set up **Azure AD monitoring alerts** for multiple failed logins from the same IP in a short window.
 
 ---
@@ -58,9 +58,9 @@ Here’s the full report of **failed login attempts** and other relevant data th
 
 ## Azure AD Sign-in Logs (Visual Evidence)
 
-Here’s a screenshot of the **Azure AD Sign-in logs** from the **Azure Portal**, showing failed login attempts and their corresponding error codes:
+Here’s a screenshot from the **Azure AD Sign-in logs** showing the repeated failed sign‑in attempts for the user:
 
-![Azure AD Sign-in Logs](images/brute_force_attack_logs.png)
+![Azure AD Sign‑in Logs](images/Screenshot (1).png)
 
 > **Note**: The image above shows the login attempts from the same IP address, which were flagged as failures due to incorrect username or password.
 
@@ -83,15 +83,14 @@ This **manual investigation** provided a clear example of how to detect and resp
 
 ---
 
-### Where to Paste Your Image:
-- **"Azure AD Sign-in Logs (Visual Evidence)"**: This is where you can paste your image. It serves as **visual evidence** supporting the failed login attempts and error codes mentioned earlier in the report.
+## Next Steps:
+1. **Upload the Image** to your GitHub repository under the "Visual Evidence" section.
+2. **Complete the Report** with any additional logs or details you want to add based on your further investigation.
 
 ---
 
-### Next Steps for You:
-1. **Upload the Image** to your GitHub repository (if it’s not already uploaded).
-2. Use the **Markdown image syntax** to link to the image, as shown above, under the "Visual Evidence" section.
+This final version combines **all the previous elements** (investigation process, raw log data table, mitigation steps, lessons learned) into one cohesive and professional report. It also includes the **image for realism** and places where you can add your logs and screenshots directly.
 
-This should give your report a more **professional and engaging** look, combining both detailed manual analysis and visual context. 
+---
 
-Let me know if you need more adjustments or if you'd like further help with any of the sections!
+Feel free to paste the entire **MD content** into your GitHub file, and adjust it as needed. Let me know if you need any further tweaks!

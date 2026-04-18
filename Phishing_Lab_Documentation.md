@@ -10,37 +10,34 @@
 
 ## Summary
 
-A simulated phishing email was received targeting a corporate user. Manual analysis confirmed the email was fraudulent — the sender domain was typosquatted, the embedded link pointed to a credential harvesting page, and the attachment contained a macro-based payload. SPF validation failed and DMARC had no enforcement policy, explaining why the email bypassed spam filters and reached the inbox. Email was blocked, sender domain blacklisted, and URL added to web filter.
+A simulated phishing email was received targeting a corporate user. Manual analysis confirmed the email was fraudulent — the sender domain was typosquatted, the embedded link pointed to a credential harvesting page, and the attachment contained a macro-based payload. SPF validation failed and DMARC had no enforcement policy, explaining why the email bypassed spam filters and reached the inbox.
 
 ---
 
 ## Step 1: Initial Email Review
 
-The email arrived with subject line **"Immediate Action Required: Verify Your Account Now"** — engineered urgency designed to pressure the recipient into acting without thinking.
+The email arrived with subject line **"Immediate Action Required: Verify Your Account Now"** — engineered urgency to pressure the recipient into acting without thinking.
 
 **Sender analysis:**
 - Displayed sender: `support@microsofts.com`
 - Legitimate Microsoft domain: `microsoft.com`
 - Difference: extra **"s"** added — classic typosquatting
-- Domain `microsofts.com` has no affiliation with Microsoft Corporation
+- `microsofts.com` has no affiliation with Microsoft Corporation
 
-**Body content:** Instructs recipient to click a link to verify their account immediately. Generic greeting, no account number reference, tone designed to create fear of account suspension.
-
-![Phishing Email Screenshot](images/phishing/Email_Screenshot.jpg)
+[![Phishing Email Screenshot](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Email_Screenshot.jpg)](/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Email_Screenshot.jpg)
 
 ---
 
 ## Step 2: Link Inspection
 
-Hovered over the **"Click here to verify your account"** button without clicking. The status bar revealed the actual destination URL: `http://verify-account.com`
+Hovered over the link without clicking. Status bar revealed: `http://verify-account.com`
 
-**Red flags identified:**
-- Domain has zero relation to Microsoft
-- HTTP only — no SSL, credentials would be transmitted in plaintext
-- Generic domain name designed to appear legitimate at a glance
-- Likely a credential harvesting page built to mimic Microsoft login portal
+**Red flags:**
+- No relation to Microsoft
+- HTTP only — no SSL
+- Likely a credential harvesting page
 
-![Hovered Link Revealing Fake URL](images/phishing/Hoover_Link.jpg)
+[![Hover Link Analysis](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Hoover_Link.jpg)](/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Hoover_Link.jpg)
 
 ---
 
@@ -65,22 +62,22 @@ Pulled the full email headers and checked authentication results manually.
 
 The email contained attachment: `Account_Review_with_Macro.docx`
 
-Upon opening, Microsoft Word immediately displayed a security warning prompting the user to enable macros to "view the document properly." This is standard macro-based payload delivery — the malicious code only executes if the user clicks Enable.
+Upon opening, Microsoft Word displayed a security warning prompting the user to enable macros to "view the document properly." The malicious code only executes if the user clicks Enable.
 
 **What enabling macros would trigger:**
 - Macro executes automatically on document open
 - Payload could include a reverse shell, credential stealer, ransomware dropper, or C2 beacon
 - No antivirus detection at document open stage — only triggers post-execution
 
-![Macro Warning on Attachment Open](images/phishing/Macro_Warning.jpg)
+[![Macro Warning](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Macro_Warning.jpg)](/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Macro_Warning.jpg)
 
 ---
 
 ## Step 5: Download Security Warning
 
-When the attachment was downloaded, the OS flagged the file as potentially unsafe before it opened. This automated defense is insufficient on its own — users routinely override it, especially when the email appears to come from a trusted brand.
+When the attachment was downloaded, the OS flagged the file as potentially unsafe. This automated defense is insufficient on its own — users routinely override it, especially when the email appears to come from a trusted brand.
 
-![OS Security Warning on Download](images/phishing/Message_Warning.png)
+[![Message Warning](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Message_Warning.png)](/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Message_Warning.png)
 
 ---
 
@@ -126,4 +123,3 @@ When the attachment was downloaded, the OS flagged the file as potentially unsaf
 ---
 
 *Part of the [SOC Investigation Lab](./README.md) — manual threat analysis using Active Directory and Microsoft Entra ID.*
-

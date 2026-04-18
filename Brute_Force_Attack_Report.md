@@ -66,7 +66,7 @@ No geo-location discrepancy — Ad Dawhah is the user's normal location. No othe
 
 ### Visual Evidence — Azure AD Sign-In Logs
 
-![Azure AD Sign-in Logs](images/Screenshot (1).png)
+![Azure AD Sign-in Logs](images/brute_force_attack_logs.png)
 
 > Screenshot of Entra ID sign-in logs showing the 10 failed attempts with error code 50126 followed by the MFA-protected successful login.
 

@@ -80,6 +80,7 @@ When the attachment was downloaded, the OS flagged the file as potentially unsaf
 [![Message Warning](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Message_Warning.png)](/hurlycabalan/Soc-Investigation/blob/main/images/phishing/Message_Warning.png)
 
 ---
+---
 
 ## IOC Summary
 

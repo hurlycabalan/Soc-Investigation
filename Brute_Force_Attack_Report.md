@@ -60,7 +60,7 @@ Here’s the full report of **failed login attempts** and other relevant data th
 
 Here’s a screenshot of the **Azure AD Sign-in logs** from the **Azure Portal**, showing failed login attempts and their corresponding error codes:
 
-![Azure AD Sign-in Logs](images/Screenshot (1).png)
+![Azure AD Sign-in Logs](images/azure-sign-in-logs.png)
 
 > **Note**: The image above shows the login attempts from the same IP address, which were flagged as failures due to incorrect username or password.
 

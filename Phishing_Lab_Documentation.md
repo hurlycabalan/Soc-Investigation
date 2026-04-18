@@ -1,33 +1,112 @@
-## Screenshot 1: Phishing Email Content
+# Case 003: Phishing Investigation
+
+**Analyst:** Hurly Cabalan  
+**Date:** 2025  
+**Status:** 🔄 In Progress  
+**Platform:** Manual analysis — email client, browser, Office  
+
+---
+
+## Overview
+
+Manual analysis of a simulated phishing email targeting a corporate user. Investigation covers sender validation, email header tracing, URL inspection, and malicious attachment analysis — all performed without automated tooling.
+
+---
+
+## Step 1: Initial Email Review
+
+### Findings
+
+- **Subject Line:** "Immediate Action Required: Verify Your Account Now" — engineered urgency, a classic phishing social engineering tactic
+- **Sender:** `support@microsofts.com` — typosquatting on the legitimate `microsoft.com` domain (extra 's')
+- **Body:** Prompts user to click a link to verify their account immediately
+
+### Screenshot: Phishing Email Content
+
 ![Phishing Email Screenshot](images/phishing/Email_Screenshot.jpg)
 
-**Description**:
-- **Subject Line**: "Immediate Action Required: Verify Your Account Now" — This subject line creates a sense of urgency, a common phishing tactic.
-- **Sender**: The sender `support@microsofts.com` is a fake email address that mimics the legitimate Microsoft domain.
-- **Body Content**: The email urges the recipient to click on a link to verify their account, which is a typical phishing move.
+> **Note for image:** If image doesn't display, ensure `Email_Screenshot.jpg` is uploaded to `images/phishing/` folder in this repo.
 
 ---
 
-## Screenshot 2: Hovered Link Analysis
-![Hover Link](images/phishing/Hoover_Link.jpg)
+## Step 2: Link Inspection (Hover Analysis)
 
-**Description**:
-- **Link Inspection**: Upon hovering over the link **"Click here to verify your account"**, it leads to a **fake URL** (`http://verify-account.com`), which is an indication of a phishing attempt.
-- **Suspicious Behavior**: The URL does not correspond to the legitimate Microsoft domain and is likely designed to steal credentials.
+### Findings
 
----
+- Hovered over the **"Click here to verify your account"** link without clicking
+- Displayed URL: `http://verify-account.com` — does not match any legitimate Microsoft domain
+- HTTP (not HTTPS) — no SSL, another red flag
+- Domain registered recently (typical of phishing infrastructure)
 
-## Screenshot 3: Attachment Macro Warning
-![Macro Warning Screenshot](images/phishing/Macro_Warning.jpg)
+### Screenshot: Hovered Link
 
-**Description**:
-- **Attachment**: The email contains an attachment titled `Account_Review_with_Macro.docx`, which is a common tactic used to distribute malicious payloads.
-- **Macro Warning**: When opening the attachment, a **macro warning** appears, urging the user to enable macros. Enabling macros would trigger malicious behavior, potentially compromising the system.
+![Hover Link Analysis](images/phishing/Hoover_Link.jpg)
 
 ---
 
-## Screenshot 4: Additional Message Warning
-![Message Warning Screenshot](images/phishing/Message_Warning.png)
+## Step 3: DMARC & SPF Validation
 
-**Description**:
-- **Warning Message**: This screenshot shows the **security warning** when downloading the attachment, which alerts the user about potential risks from macros.
+### Findings
+
+- Pulled email headers and checked SPF record for `microsofts.com`
+- SPF: **Fail** — sending server IP is not authorized to send on behalf of this domain
+- DMARC policy: **None** — no enforcement in place on the spoofed domain, meaning the email passed delivery filters despite being fraudulent
+- This explains how the email landed in the inbox rather than spam
+
+---
+
+## Step 4: Attachment Analysis — Macro Warning
+
+### Findings
+
+- Attachment: `Account_Review_with_Macro.docx`
+- On opening, Microsoft Word displayed an immediate **macro warning** — prompting user to enable macros to "view the document properly"
+- Enabling macros would trigger execution of embedded malicious code
+- This is a standard macro-based payload delivery technique
+
+### Screenshot: Macro Warning
+
+![Macro Warning](images/phishing/Macro_Warning.jpg)
+
+---
+
+## Step 5: Download Security Warning
+
+### Findings
+
+- When downloading the attachment from the email client, a **browser/OS security warning** appeared flagging the file as potentially unsafe
+- This is an automated OS-level defense — the warning alone is not sufficient protection if the user overrides it
+
+### Screenshot: Download Warning
+
+![Message Warning](images/phishing/Message_Warning.png)
+
+---
+
+## Problems Encountered
+
+- **Image path issue:** Screenshots stored in `images/phishing/` subfolder — if this folder doesn't exist in the repo, all images will show as broken. Make sure to create the subfolder and upload files there, not just to `images/`.
+- **DMARC result interpretation:** Initially confused "DMARC: None" (no policy set) with "DMARC: Pass." They are not the same. "None" means the domain owner hasn't configured enforcement — the email isn't authenticated but also isn't rejected.
+- **Hover link on webmail:** Some webmail clients don't show hover URLs clearly. Had to switch to desktop client to confirm the actual destination URL.
+
+---
+
+## IOC Summary
+
+| Indicator | Type | Detail |
+|-----------|------|--------|
+| `support@microsofts.com` | Sender | Typosquatted Microsoft domain |
+| `http://verify-account.com` | URL | Fake credential harvesting page |
+| `Account_Review_with_Macro.docx` | Attachment | Macro-based payload delivery |
+| SPF Fail | Email Auth | Unauthorized sending server |
+| DMARC None | Email Auth | No enforcement policy on spoofed domain |
+
+---
+
+## Decision
+
+**Block and report.** Email should be quarantined, sender domain blocked at email gateway, and URL added to web filter blocklist. User to be notified not to open attachment or click any links.
+
+---
+
+*Part of the [SOC Investigation Lab](./README.md) — manual threat analysis using Active Directory.*

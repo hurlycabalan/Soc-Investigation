@@ -16,8 +16,9 @@ AuthenticationEvents
 | where result == "Failed Login"
 | summarize FailedAttempts = count() by src_ip
 | order by FailedAttempts desc
-![Drill 2](https://raw.githubusercontent.com/hurlycabalan/Soc-Investigation/main/KQL-Drills/src_ip.png)
 ```
+![Drill 2](https://raw.githubusercontent.com/hurlycabalan/Soc-Investigation/main/KQL-Drills/src_ip.png)
+
 **Finding:** 88.150.11.111 is external IP with 10 failed attempts — red flag
 
 ## Drill 3 — Phishing detection

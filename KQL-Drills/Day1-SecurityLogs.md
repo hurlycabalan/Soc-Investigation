@@ -9,7 +9,7 @@ AuthenticationEvents
 | order by FailedAttempts desc
 ```
 **Finding:** jadenman had 22 failed attempts — top suspect for brute force
-![Drill 1 - Failed logins by username](KQL-Drills/Drill_2.png)
+![Drill 1](https://raw.githubusercontent.com/hurlycabalan/Soc-Investigation/main/KQL-Drills/Drill2.png)
 
 ## Drill 2 — Failed logins by IP address
 ```kql
@@ -17,7 +17,7 @@ AuthenticationEvents
 | where result == "Failed Login"
 | summarize FailedAttempts = count() by src_ip
 | order by FailedAttempts desc
-![Drill 2 - Failed logins by IP](KQL-Drills/src_ip.png)
+![Drill 2](https://raw.githubusercontent.com/hurlycabalan/Soc-Investigation/main/KQL-Drills/src_ip.png)
 ```
 **Finding:** 88.150.11.111 is external IP with 10 failed attempts — red flag
 
@@ -28,4 +28,4 @@ Email
 | project event_time, sender, reply_to, recipient, subject
 ```
 **Finding:** 3,869 emails where reply_to differs from sender — possible phishing campaign
-![Drill 3 - Phishing detection](KQL-Drills/3800_Query.png)
+![Drill 3](https://raw.githubusercontent.com/hurlycabalan/Soc-Investigation/main/KQL-Drills/3800Query.png)

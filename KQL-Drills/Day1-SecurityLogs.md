@@ -10,7 +10,6 @@ AuthenticationEvents
 ```
 **Finding:** jadenman had 22 failed attempts — top suspect for brute force
 ![Drill 1](https://raw.githubusercontent.com/hurlycabalan/Soc-Investigation/main/KQL-Drills/Drill2.png)
-
 ## Drill 2 — Failed logins by IP address
 ```kql
 AuthenticationEvents

@@ -25,7 +25,7 @@ The email arrived with subject line **"Immediate Action Required: Verify Your Ac
 - Difference: extra **"s"** added — classic typosquatting
 - `microsofts.com` has no affiliation with Microsoft Corporation
 
-![Phishing Email Screenshot](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Email_Screenshot.jpg)
+![Phishing Email Screenshot](images/phishing/images/phishing/images/Email_Screenshot.jpg)
 
 ---
 
@@ -38,7 +38,7 @@ Hovered over the link without clicking. Status bar revealed: `http://verify-acco
 - HTTP only — no SSL
 - Likely a credential harvesting page
 
-![Hover Link Analysis](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Hoover_Link.jpg)
+![Hover Link Analysis](images/phishing/images/phishing/images/Hoover_ Link.jpg)
 
 ---
 
@@ -70,7 +70,7 @@ Upon opening, Microsoft Word displayed a security warning prompting the user to 
 - Payload could include a reverse shell, credential stealer, ransomware dropper, or C2 beacon
 - No antivirus detection at document open stage — only triggers post-execution
 
-![Macro Warning](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Macro_Warning.jpg)
+![Macro Warning](images/phishing/images/phishing/images/Macro_Warning.jpg)
 
 ---
 
@@ -78,7 +78,7 @@ Upon opening, Microsoft Word displayed a security warning prompting the user to 
 
 When the attachment was downloaded, the OS flagged the file as potentially unsafe. This automated defense is insufficient on its own — users routinely override it, especially when the email appears to come from a trusted brand.
 
-![Message Warning](https://github.com/hurlycabalan/Soc-Investigation/raw/main/images/phishing/Message_Warning.png)
+![Message Warning](images/phishing/images/phishing/images/Message_Warning.png)
 
 ---
 

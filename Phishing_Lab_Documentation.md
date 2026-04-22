@@ -38,7 +38,7 @@ Hovered over the link without clicking. Status bar revealed: `http://verify-acco
 - HTTP only — no SSL
 - Likely a credential harvesting page
 
-![Hover Link Analysis](images/Hoover_ Link.jpg)
+![Hover Link Analysis](images/Hoover_Link.jpg)
 
 ---
 

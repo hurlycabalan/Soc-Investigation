@@ -1,1 +1,280 @@
 
+# Case 004 — Account Takeover Investigation
+
+**Case ID:** SOC-2024-004  
+**Severity:** 🔴 High  
+**Status:** Resolved  
+**Analyst:** Hurly Cabalan  
+**Platform:** Microsoft Sentinel | Microsoft Defender for Identity  
+**MITRE ATT&CK Navigator:** [TA0006 Credential Access] → [TA0001 Initial Access] → [TA0003 Persistence] → [TA0010 Exfiltration]
+
+---
+
+## 📋 Incident Overview
+
+| Field | Details |
+|---|---|
+| **Incident ID** | SOC-2024-004 |
+| **Date Detected** | 2024-11-14 |
+| **Time Detected** | 02:17 UTC |
+| **Affected User** | justine.bieber@contoso.com |
+| **Affected Department** | Finance |
+| **Source IP** | 185.220.101.45 (Tor Exit Node) |
+| **Attack Type** | Account Takeover via Password Spray + MFA Fatigue |
+| **Impact** | Unauthorized access to SharePoint, OneDrive, and Exchange Online |
+
+---
+
+## 🎯 Executive Summary
+
+On November 14, 2024, a successful account takeover was detected against a Finance department user account (`justine.bieber@contoso.com`). The attacker conducted a password spray attack over a 6-hour period before successfully authenticating. Following initial access, the attacker bypassed MFA through a fatigue attack, registered a new device for persistence, and began exfiltrating sensitive financial documents from SharePoint and OneDrive.
+
+The incident was detected by Microsoft Sentinel analytics rules correlating authentication failures with a subsequent successful login from a known Tor exit node IP address.
+
+---
+
+## ⏱️ Attack Timeline
+
+```
+01:12 UTC — Password spray begins (185.220.101.45 → justine.bieber@contoso.com)
+01:12–02:15 UTC — 47 failed authentication attempts over 63 minutes
+02:15 UTC — Correct password found — authentication attempt with valid credentials
+02:15–02:17 UTC — MFA fatigue attack — 23 MFA push notifications sent in 2 minutes
+02:17 UTC — Victim approves MFA push (fatigue)
+02:17 UTC — ✅ SUCCESSFUL LOGIN — account compromised
+02:19 UTC — Attacker registers new device (Persistence)
+02:21 UTC — SharePoint accessed — Finance folder browsed
+02:24 UTC — 14 financial documents downloaded from OneDrive
+02:31 UTC — Exchange Online accessed — inbox rules created (auto-forward)
+02:45 UTC — Sentinel alert triggered — SOC analyst notified
+02:52 UTC — Account disabled, active sessions revoked
+03:10 UTC — Incident escalated to L2 for forensic review
+```
+
+---
+
+## 🔍 Investigation Queries
+
+### Query 1 — Identify Password Spray Activity
+
+**Purpose:** Confirm the volume and pattern of failed authentication attempts against the target account.
+
+```kql
+SigninLogs
+| where UserPrincipalName == "justine.bieber@contoso.com"
+| where ResultType != "0"
+| summarize FailedCount = count(),
+            FirstAttempt = min(TimeGenerated),
+            LastAttempt = max(TimeGenerated) by IPAddress
+| sort by FailedCount desc
+```
+
+**Findings:** 47 failed attempts from `185.220.101.45` between 01:12–02:15 UTC.
+
+---
+
+### Query 2 — Confirm Successful Login After Failures
+
+**Purpose:** Correlate the brute force activity with a successful authentication from the same IP.
+
+```kql
+let FailedLogins =
+    SigninLogs
+    | where ResultType != "0"
+    | summarize FailedCount = count() by UserPrincipalName, IPAddress
+    | where FailedCount >= 5;
+let SuccessLogins =
+    SigninLogs
+    | where ResultType == "0"
+    | summarize LastSuccess = max(TimeGenerated),
+                Location = any(Location) by UserPrincipalName, IPAddress;
+FailedLogins
+| join kind=inner SuccessLogins on UserPrincipalName, IPAddress
+| project UserPrincipalName, IPAddress, FailedCount, LastSuccess, Location
+| sort by FailedCount desc
+```
+
+**Findings:** Confirmed successful login from same IP at 02:17 UTC after 47 failures.
+
+---
+
+### Query 3 — MFA Fatigue Detection
+
+**Purpose:** Identify the volume of MFA push notifications sent to the victim account.
+
+```kql
+SigninLogs
+| where UserPrincipalName == "justine.bieber@contoso.com"
+| where AuthenticationRequirement == "multiFactorAuthentication"
+| where ResultType != "0"
+| summarize MFAFailures = count(),
+            FirstPush = min(TimeGenerated),
+            LastPush = max(TimeGenerated) by UserPrincipalName, IPAddress
+| extend PushDuration = LastPush - FirstPush
+```
+
+**Findings:** 23 MFA push notifications sent within a 2-minute window. Victim approved on the 24th attempt.
+
+---
+
+### Query 4 — New Device Registration (Persistence)
+
+**Purpose:** Detect if the attacker registered a new device to maintain persistent access.
+
+```kql
+AuditLogs
+| where OperationName == "Register device"
+| where InitiatedBy has "justine.bieber@contoso.com"
+| project TimeGenerated, OperationName, InitiatedBy, TargetResources
+| sort by TimeGenerated desc
+```
+
+**Findings:** New device registered at 02:19 UTC — 2 minutes after successful login.
+
+---
+
+### Query 5 — Data Exfiltration Detection
+
+**Purpose:** Identify file download activity from SharePoint and OneDrive during the compromise window.
+
+```kql
+OfficeActivity
+| where UserId == "justine.bieber@contoso.com"
+| where Operation in ("FileDownloaded", "FileSyncDownloadedFull")
+| where TimeGenerated between (datetime(2024-11-14T02:17:00Z) .. datetime(2024-11-14T03:00:00Z))
+| project TimeGenerated, Operation, OfficeObjectId, ClientIP
+| sort by TimeGenerated asc
+```
+
+**Findings:** 14 files downloaded from `/Finance/Q4-Reports/` between 02:24–02:30 UTC.
+
+---
+
+### Query 6 — Inbox Rule Creation (Persistence + Exfiltration)
+
+**Purpose:** Detect malicious inbox forwarding rules created to maintain access to future communications.
+
+```kql
+OfficeActivity
+| where UserId == "justine.bieber@contoso.com"
+| where Operation == "New-InboxRule"
+| project TimeGenerated, Operation, Parameters, ClientIP
+| sort by TimeGenerated desc
+```
+
+**Findings:** Auto-forward rule created at 02:31 UTC — forwarding all incoming emails to `exfil@protonmail.com`.
+
+---
+
+### Query 7 — Threat Intelligence Enrichment
+
+**Purpose:** Validate if the source IP is listed in active threat intelligence feeds.
+
+```kql
+let SuspiciousIP =
+    ThreatIntelligenceIndicator
+    | where Active == true
+    | project IPAddress = NetworkIP, ThreatType, ConfidenceScore;
+SigninLogs
+| where UserPrincipalName == "justine.bieber@contoso.com"
+| where ResultType == "0"
+| join kind=inner SuspiciousIP on IPAddress
+| project TimeGenerated, UserPrincipalName, IPAddress, ThreatType, ConfidenceScore
+```
+
+**Findings:** `185.220.101.45` confirmed as active Tor exit node — ThreatType: `Anonymous Proxy`, Confidence: 95.
+
+---
+
+## 🗺️ MITRE ATT&CK Mapping
+
+| Phase | Tactic | Technique | ID |
+|---|---|---|---|
+| 1 | **Credential Access** | Password Spraying | T1110.003 |
+| 2 | **Credential Access** | MFA Fatigue (Multi-Factor Authentication Request Generation) | T1621 |
+| 3 | **Initial Access** | Valid Accounts | T1078 |
+| 4 | **Persistence** | Device Registration | T1098.005 |
+| 5 | **Persistence** | Email Forwarding Rule | T1114.003 |
+| 6 | **Collection** | Email Collection | T1114 |
+| 7 | **Exfiltration** | Exfiltration Over Web Service | T1567 |
+
+---
+
+## 📊 Findings Summary
+
+| Finding | Detail |
+|---|---|
+| **Attack Vector** | Password spray from Tor exit node |
+| **MFA Bypass Method** | MFA fatigue — 23 push notifications in 2 minutes |
+| **Persistence Method** | New device registration + inbox forwarding rule |
+| **Data Compromised** | 14 financial documents (Q4 Reports) |
+| **Exfiltration Channel** | OneDrive download + email auto-forward |
+| **Detection Time** | 28 minutes after initial compromise |
+| **Containment Time** | 35 minutes after initial compromise |
+
+---
+
+## 🛡️ Recommendations
+
+### Immediate Actions
+- [x] Disable compromised account
+- [x] Revoke all active sessions
+- [x] Remove malicious inbox forwarding rule
+- [x] Remove unauthorized registered device
+- [x] Block source IP `185.220.101.45` at firewall level
+- [x] Force password reset for affected user
+
+### Short-Term Mitigations
+- [ ] Enable **Number Matching** for MFA push notifications — eliminates MFA fatigue attacks
+- [ ] Enable **Additional Context** in Microsoft Authenticator — shows app name and location on push
+- [ ] Implement **Conditional Access Policy** — block authentication from Tor exit nodes and anonymous proxies
+- [ ] Configure **Sign-in Risk Policy** — require step-up authentication for high-risk sign-ins
+
+### Long-Term Recommendations
+- [ ] Enable **Microsoft Entra ID Protection** — automated risk-based Conditional Access
+- [ ] Implement **Privileged Identity Management (PIM)** for Finance department accounts
+- [ ] Review and restrict SharePoint permissions for sensitive financial folders
+- [ ] Conduct user awareness training — educate on MFA fatigue attack patterns
+- [ ] Deploy **Sentinel Analytics Rule** — auto-alert on MFA push count > 10 within 5 minutes
+
+---
+
+## 📁 Evidence & Artifacts
+
+```
+Case_004/
+├── screenshots/
+│   ├── 001_sentinel_alert_triggered.png
+│   ├── 002_failed_login_query_results.png
+│   ├── 003_successful_login_correlation.png
+│   ├── 004_mfa_fatigue_query_results.png
+│   ├── 005_new_device_registration.png
+│   ├── 006_onedrive_file_downloads.png
+│   ├── 007_inbox_rule_creation.png
+│   └── 008_threat_intel_ip_enrichment.png
+└── Case_004_Account_Takeover.md
+```
+
+---
+
+## 🔗 Related Cases
+
+| Case | Topic | Relationship |
+|---|---|---|
+| [Case 001](../Case_001/) | User Creation + MFA Trigger | Persistence technique overlap |
+| [Case 002](../Case_002/) | Brute Force Attack | Attack precursor — same initial technique |
+| [Case 003](../Case_003/) | Phishing Investigation | Alternative initial access vector |
+
+---
+
+## 📚 References
+
+- [MITRE ATT&CK T1110.003 — Password Spraying](https://attack.mitre.org/techniques/T1110/003/)
+- [MITRE ATT&CK T1621 — MFA Request Generation](https://attack.mitre.org/techniques/T1621/)
+- [Microsoft — Protect against MFA Fatigue](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-mfa-number-match)
+- [Microsoft Sentinel — Sign-in Logs Schema](https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/signinlogs)
+
+---
+
+*Investigation by Hurly Cabalan | SOC Investigation Portfolio*  
+*github.com/hurlycabalan/Soc-Investigation*

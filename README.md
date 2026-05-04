@@ -15,6 +15,12 @@
 | 002 | Brute Force Attack Analysis | ✅ Complete |
 | 003 | Phishing Investigation | 🔄 In Progress |
 
+## 🛡️ Sentinel Investigation Scenarios
+| Scenario | Title | Status |
+|----------|-------|--------|
+| SC01 | Brute Force Attack | ✅ Complete |
+| SC02 | Insider Threat | 🔜 Next |
+
 ---
 
 ## Case 001: User Creation & MFA Enforcement

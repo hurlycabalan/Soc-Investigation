@@ -75,9 +75,9 @@ AuditLogs post-compromise returned empty — no group membership changes, no rol
 
 ### Screenshots
 
-![Sign-In Logs — Failed Attempts](screenshots/brute_force_attack_logs.png)
-![Source IP](screenshots/src_ip.png)
-![Detection Hit](screenshots/Screenshot%20(1).png)
+![Sign-In Logs — Failed Attempts](SC01-BruteForce/screenshots/initial-query-history.png)
+![Source IP](SC01-BruteForce/screenshots/query-no-results-fullpage.png)
+![Detection Hit](SC01-BruteForce/screenshots/query-no-results-zoom.png)
 
 ---
 

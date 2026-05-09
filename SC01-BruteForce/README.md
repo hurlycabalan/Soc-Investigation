@@ -75,9 +75,9 @@ AuditLogs post-compromise returned empty — no group membership changes, no rol
 
 ### Screenshots
 
-![Sign-In Logs — Failed Attempts](screenshots/initial-query-history.png)
-![Source IP](screenshots/query-no-results-fullpage.png)
-![Detection Hit](screenshots/query-no-results-zoom.png)
+![Sign-In Logs — Failed Attempts](screenshots/query-no-results-fullpage.png)
+![Source IP](screenshots/detection-hit-fullpage.png)
+![Detection Hit](screenshots/initial-query-history.png)
 
 ---
 

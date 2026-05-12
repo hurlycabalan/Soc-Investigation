@@ -39,6 +39,10 @@ CommonSecurityLog
 ```
 *Confirmed PAN-OS data available. Activity = drop. Starting point.*
 
+![PaloAlto Recon Take5](TL-03-01-PaloAlto-Recon-Take5.png)
+
+---
+
 **Step 2 — Port Scan Detection**
 ```kql
 CommonSecurityLog
@@ -48,6 +52,10 @@ CommonSecurityLog
 | sort by PortCount desc
 ```
 *Result: 10.0.1.50 → 124 unique destination ports. Automated scanner confirmed.*
+
+![Port Scan 124 Ports](TL-03-02-PortScan-124Ports.png)
+
+---
 
 **Step 3 — Traffic Drill-Down**
 ```kql
@@ -59,6 +67,12 @@ CommonSecurityLog
 ```
 *Result: 298 firewall events — all "drop". Firewall blocking the scan.*
 
+![Traffic 298 Drops Sorted](TL-03-03-Traffic-298Drops-Sorted.png)
+
+![Traffic 298 Drops Project](TL-03-04-Traffic-298Drops-Project.png)
+
+---
+
 **Step 4 — Successful Connections (C2 Confirmation)**
 ```kql
 CommonSecurityLog
@@ -68,40 +82,64 @@ CommonSecurityLog
 ```
 *Result: 46 "end" events. DestinationIPs: 192.0.2.100, 198.51.100.42, 203.0.113.77 — all external, all port 443. C2 confirmed.*
 
-**Step 5 — CrowdStrike Endpoint Pivot**
+![Activity End 46 Results](TL-03-08-Activity-End-46Results.png)
+
+![C2 External IPs Port 443](TL-03-09-C2-ExternalIPs-Port443.png)
+
+---
+
+**Step 5 — CrowdStrike Endpoint Detection**
 ```kql
 CrowdStrikeDetections
 | take 5
 ```
 *Result: report.exe — C:\Users\mirage\Downloads\report.exe. GlobalPrevalence = rare. Not quarantined. Parent = explorer.exe. Critical severity.*
 
-**Step 6 — Host Lookup (win11a)**
+![CrowdStrike ReportExe](TL-03-05-CrowdStrike-ReportExe.png)
+
+---
+
+**Step 6 — Host Lookup (srv-file01)**
 ```kql
 CrowdStrikeHosts
 | where Hostname == "srv-file01"
 ```
 *Result: srv-file01 = 10.0.0.20, ExternalIp = 167.236.57.104, agent_id = cs-aid-srvfile-0008.*
 
-**Step 7 — Host Tied to Scanning IP**
+![CrowdStrikeHosts SrvFile01](TL-03-06-CrowdStrikeHosts-SrvFile01.png)
+
+---
+
+**Step 7 — Host Lookup (win11a)**
 ```kql
 CrowdStrikeHosts
 | where ConnectionIp == "10.0.1.50"
 ```
-*Result: 2 Dell desktops confirmed mapped to 10.0.1.50 (win11a).*
+*Result: 2 Dell desktops confirmed mapped to 10.0.1.50 — win11a is the scanner host.*
+
+![CrowdStrikeHosts Win11a](TL-03-07-CrowdStrikeHosts-Win11a.png)
+
+---
 
 **Step 8 — LSASS Detection on srv-file01**
 ```kql
 CrowdStrikeDetections
 | where DetectionId contains "srv"
 ```
-*Result: 10 detections on srvfile-0008 and srvdc01. Expanded row: tactic = Credential Access (TA0006), technique = OS Credential Dumping (T1003), display_name = "Credential Dumping via LSASS". Hostname = srv-file01. MaxSeverity = Critical (80).*
+*Result: tactic = Credential Access (TA0006), technique = OS Credential Dumping (T1003), display_name = "Credential Dumping via LSASS". Hostname = srv-file01. MaxSeverity = Critical (80).*
+
+![LSASS SrvFile01 Confirmed](TL-03-10-LSASS-SrvFile01-Confirmed.png)
+
+---
 
 **Step 9 — Okta Identity Pivot**
 ```kql
 OktaV2_CL
 | where ActorUserId contains "mirage"
 ```
-*Result: 12 events. user.session.start → user.account.privilege.grant (super admin) → system.api_token.create → user.mfa.factor.deactivate → user.mfa.factor.reset_all → user.mfa.factor.update (new TOTP enrolled). Full account takeover confirmed.*
+*Result: user.session.start → user.account.privilege.grant (super admin) → system.api_token.create → user.mfa.factor.deactivate → user.mfa.factor.reset_all → user.mfa.factor.update. Full account takeover confirmed.*
+
+![Okta SuperAdmin MFAWipeout](TL-03-11-Okta-SuperAdmin-MFAWipeout.png)
 
 ---
 
@@ -141,7 +179,7 @@ OktaV2_CL
 
 ### Immediate (0–1 hour)
 - [ ] Isolate `win11a` (10.0.1.50) — network containment
-- [ ] Isolate `srv-file01` (10.0.0.20) — potential credential store compromised
+- [ ] Isolate `srv-file01` (10.0.0.20) — credential store compromised
 - [ ] Disable `mirage` Okta account immediately
 - [ ] Revoke all API tokens created by `mirage`
 - [ ] Reset all MFA for affected accounts — force re-enrollment through secure channel
@@ -156,7 +194,7 @@ OktaV2_CL
 
 ### Long-term
 - [ ] Deploy EDR behavioral rule blocking LSASS access from non-system processes
-- [ ] Enable Okta Privileged Access Management (PAM) — require MFA step-up for admin actions
+- [ ] Enable Okta Privileged Access Management — require MFA step-up for admin actions
 - [ ] Implement Conditional Access policy — block Okta admin actions from non-compliant devices
 - [ ] Enable CrowdStrike real-time response for automatic isolation on Critical detections
 
@@ -168,7 +206,7 @@ OktaV2_CL
 |---|---|---|
 | Endpoint | CrowdStrike EDR | report.exe detected but **not quarantined** — prevention policy not enforced |
 | Network | PaloAlto Firewall | Port scan traffic **logged but not alerted** — no alert rule for internal burst scanning |
-| Identity | Okta MFA | Attacker was able to **deactivate MFA** — no admin approval required for MFA changes |
+| Identity | Okta MFA | Attacker able to **deactivate MFA** — no admin approval required for MFA changes |
 | Identity | Okta RBAC | **Super admin role granted without approval** — no Privileged Access Management in place |
 | Endpoint | LSASS Protection | **No LSA Protection enabled** on srv-file01 — LSASS accessible to non-system processes |
 

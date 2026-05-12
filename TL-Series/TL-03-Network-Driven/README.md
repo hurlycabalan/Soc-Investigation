@@ -22,8 +22,21 @@
 | **Scope** | High | win11a + srv-file01 compromised, Okta tenant affected |
 | **Business Criticality** | Critical | Active credential theft + cloud identity takeover |
 
+### Attack Timeline
+
+| Time | Event |
+|---|---|
+| 09:14 | `report.exe` executed by user `mirage` on `win11a` |
+| 09:15 | Automated port scan begins — 124 unique ports, 298 firewall events |
+| 09:17 | 46 outbound sessions on port 443 to external IPs |
+| 09:24 | Lateral movement to `srv-file01` (10.0.0.20) |
+| 09:29 | LSASS credential dumping detected on `srv-file01` |
+| 09:36 | Stolen credentials used in Okta — super admin granted, MFA wiped |
+
 ### What Happened (3-Sentence Story)
-User `mirage` executed `report.exe` (rare prevalence, not quarantined) from `C:\Users\mirage\Downloads\` on internal host `win11a` (10.0.1.50). The malware performed an automated burst port scan hitting 124 unique destination ports across the network, then established 46 successful C2 callbacks on port 443 to external IPs 192.0.2.100, 198.51.100.42, and 203.0.113.77. The attacker then laterally moved to `srv-file01` (10.0.0.20), dumped LSASS credentials (TA0006/T1003), and used the stolen credentials to log into Okta — where they granted themselves super admin, created a persistent API token, and wiped MFA for other accounts.
+User `mirage` executed `report.exe` (rare prevalence, not quarantined) from `C:\Users\mirage\Downloads\` on internal host `win11a` (10.0.1.50). The malware performed an automated burst port scan hitting 124 unique destination ports across the network, then established 46 outbound sessions on port 443 to external IPs consistent with C2 behavior. The attacker likely moved laterally to `srv-file01` (10.0.0.20) prior to LSASS credential dumping (TA0006/T1003) — exact lateral movement method unconfirmed — and subsequently used the stolen credentials in Okta, granting super admin, creating a persistent API token, and wiping MFA for other accounts.
+
+> **Note:** External IPs (192.0.2.100, 198.51.100.42, 203.0.113.77) use RFC 5737 documentation ranges for safe public sharing.
 
 ---
 
@@ -31,7 +44,7 @@ User `mirage` executed `report.exe` (rare prevalence, not quarantined) from `C:\
 
 ### Investigation Queries (Chronological)
 
-**Step 1 — PaloAlto Recon (CommonSecurityLog)**
+**Step 1 — PaloAlto Recon**
 ```kql
 CommonSecurityLog
 | where DeviceVendor == "Palo Alto Networks"
@@ -73,14 +86,14 @@ CommonSecurityLog
 
 ---
 
-**Step 4 — Successful Connections (C2 Confirmation)**
+**Step 4 — Successful Outbound Sessions**
 ```kql
 CommonSecurityLog
 | where SourceIP == "10.0.1.50"
 | where Activity == "end"
 | project TimeGenerated, SourceIP, DestinationIP, DestinationPort
 ```
-*Result: 46 "end" events. DestinationIPs: 192.0.2.100, 198.51.100.42, 203.0.113.77 — all external, all port 443. C2 confirmed.*
+*Result: 46 completed outbound sessions on port 443 to external IPs — consistent with C2 behavior. Confirmed C2 pending deeper forensics.*
 
 ![Activity End 46 Results](TL-03-08-Activity-End-46Results.png)
 
@@ -93,7 +106,7 @@ CommonSecurityLog
 CrowdStrikeDetections
 | take 5
 ```
-*Result: report.exe — C:\Users\mirage\Downloads\report.exe. GlobalPrevalence = rare. Not quarantined. Parent = explorer.exe. Critical severity.*
+*Result: report.exe — C:\Users\mirage\Downloads\report.exe. GlobalPrevalence = rare. Not quarantined. Parent = explorer.exe. Critical severity. SHA256: [redacted for lab realism]*
 
 ![CrowdStrike ReportExe](TL-03-05-CrowdStrike-ReportExe.png)
 
@@ -126,7 +139,7 @@ CrowdStrikeHosts
 CrowdStrikeDetections
 | where DetectionId contains "srv"
 ```
-*Result: tactic = Credential Access (TA0006), technique = OS Credential Dumping (T1003), display_name = "Credential Dumping via LSASS". Hostname = srv-file01. MaxSeverity = Critical (80).*
+*Result: tactic = Credential Access (TA0006), technique = OS Credential Dumping (T1003), display_name = "Credential Dumping via LSASS". Hostname = srv-file01. MaxSeverity = Critical (80). SHA256: [redacted for lab realism]*
 
 ![LSASS SrvFile01 Confirmed](TL-03-10-LSASS-SrvFile01-Confirmed.png)
 
@@ -165,9 +178,9 @@ OktaV2_CL
 |---|---|---|
 | Execution | T1204.002 — User Execution: Malicious File | report.exe run by mirage from Downloads |
 | Discovery | T1046 — Network Service Scanning | 124 ports, 298 firewall events from 10.0.1.50 |
-| Command & Control | T1071.001 — Application Layer Protocol: Web | 46 C2 callbacks on port 443 to external IPs |
+| Command & Control | T1071.001 — Application Layer Protocol: Web | 46 outbound sessions on port 443 — consistent with C2 |
 | Credential Access | T1003.001 — OS Credential Dumping: LSASS | LSASS dump on srv-file01, CrowdStrike detection |
-| Lateral Movement | T1550 — Use Alternate Authentication Material | LSASS creds used to access srv-file01 |
+| Lateral Movement | T1550 — Use Alternate Authentication Material | Likely lateral movement to srv-file01; exact method unconfirmed |
 | Initial Access (Cloud) | T1078 — Valid Accounts | Stolen mirage credentials used in Okta |
 | Privilege Escalation | T1098 — Account Manipulation | Super admin role granted in Okta |
 | Persistence | T1528 — Steal Application Access Token | API token created in Okta |
@@ -186,11 +199,12 @@ OktaV2_CL
 - [ ] Block external IPs: 192.0.2.100, 198.51.100.42, 203.0.113.77 at firewall
 
 ### Short-term (24–72 hours)
-- [ ] Hash `report.exe` (SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855) — add to blocklist
+- [ ] Hash `report.exe` — SHA256: [redacted for lab realism] — add to blocklist
 - [ ] Force password reset for all CONTOSO domain accounts (LSASS scope unknown)
 - [ ] Audit all Okta privilege grants in last 30 days
 - [ ] Review API token inventory — revoke unknown tokens
 - [ ] Review srvdc01 detections — domain controller may be affected
+- [ ] Investigate lateral movement path to srv-file01 — method unconfirmed
 
 ### Long-term
 - [ ] Deploy EDR behavioral rule blocking LSASS access from non-system processes
@@ -253,13 +267,14 @@ OktaV2_CL
 PaloAlto alone = "suspicious traffic." PaloAlto + CrowdStrike + Okta = "active attacker, active takeover, escalate now." The kill chain only becomes visible when you follow the evidence across vendors.
 
 ### What I Got Wrong
-- Initially assumed LSASS claim was unconfirmed — needed to learn CrowdStrikeDetections schema (`DetectionId contains "srv"`) before finding the evidence
+- Initially assumed LSASS claim was unconfirmed — needed to learn CrowdStrikeDetections schema (`DetectionId contains "srv"`) before finding evidence
 - Used wrong field name (`Device` instead of `ActorUserId` in OktaV2_CL) — schema check first next time
+- Lateral movement method to srv-file01 stated as confirmed but evidence only proves LSASS was dumped there — exact path remains unconfirmed
 
 ### Interview Q&A
 
 **Q: How did you identify this as a True Positive and not a vulnerability scanner?**
-A: Three factors: (1) report.exe had rare GlobalPrevalence — a legitimate scanner would be a known tool. (2) The C2 callbacks on port 443 to external IPs confirmed outbound communication — scanners don't call home. (3) LSASS dump + Okta privilege escalation confirmed active attacker behavior, not scheduled scanning.
+A: Three factors: (1) report.exe had rare GlobalPrevalence — a legitimate scanner would be a known tool. (2) Outbound sessions on port 443 to external IPs are consistent with C2 behavior — scanners don't call home. (3) LSASS dump + Okta privilege escalation confirmed active attacker behavior, not scheduled scanning.
 
 **Q: Why did you pivot to Okta?**
 A: LSASS credential dumping on srv-file01 means credentials were harvested. The logical question is: were those credentials used anywhere else? Okta is the identity provider — if stolen creds were replayed, that's where we'd see it. The 12 Okta events confirmed the attacker moved from on-prem to cloud identity.
@@ -269,3 +284,6 @@ A: Five layers failed simultaneously: CrowdStrike detected but didn't quarantine
 
 **Q: What's the blast radius?**
 A: Confirmed: win11a and srv-file01 on-prem, full Okta tenant (super admin = everything). Potential: srvdc01 also had CrowdStrike detections — if the DC is compromised, we may need a full domain credential reset. That's L2's call after deeper forensics.
+
+**Q: How certain are you about the C2 attribution?**
+A: Moderate confidence. Firewall "end" events confirm completed outbound sessions on port 443 to external IPs — consistent with C2 callback behavior, but not definitively confirmed without PCAP or TI match. I'd escalate as high-confidence suspicious rather than confirmed C2.

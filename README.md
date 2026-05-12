@@ -45,7 +45,7 @@ All investigations include vendor-agnostic analysis + Microsoft/SC-200 translati
 |---|---|---|---|
 | [TL-01](TL-01-Identity-Driven) | Identity-Driven Attack | ✅ Complete | Okta, SignInLogs, MFA Bypass |
 | TL-02 | Network Intrusion | 🔄 Planned | Palo Alto, NSG, KQL joins |
-| TL-03 | C2 Beacon Detection | 🔄 Planned | CrowdStrike, C2 patterns |
+| TL-03 | C2 Beacon Detection | ✅ Complete | CrowdStrike, C2 patterns |
 | [TL-04](TL-04-AutomationRule) | Automation Rule Troubleshooting | ✅ Complete | Logic Apps, Playbooks, Sentinel Automation |
 | TL-05 | Cross-Source Correlation | 🔄 Planned | Multi-vendor KQL, Graph |
 

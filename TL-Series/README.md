@@ -52,7 +52,7 @@ CommonSecurityLog
 ```
 *Confirmed PAN-OS data available. Activity = drop. Starting point.*
 
-![PaloAlto Recon Take5](TL-03-01-PaloAlto-Recon-Take5.png)
+![PaloAlto Recon Take5](screenshots/TL-03-01-PaloAlto-Recon-Take5.png)
 
 ---
 
@@ -66,8 +66,7 @@ CommonSecurityLog
 ```
 *Result: 10.0.1.50 → 124 unique destination ports. Automated scanner confirmed.*
 
-![Port Scan 124 Ports](TL-03-02-PortScan-124Ports.png)
-
+![Port Scan 124 Ports](screenshots/TL-03-02-PortScan-124Ports.png)
 ---
 
 **Step 3 — Traffic Drill-Down**
@@ -80,9 +79,9 @@ CommonSecurityLog
 ```
 *Result: 298 firewall events — all "drop". Firewall blocking the scan.*
 
-![Traffic 298 Drops Sorted](TL-03-03-Traffic-298Drops-Sorted.png)
+![Traffic 298 Drops Sorted](screenshots/TL-03-03-Traffic-298Drops-Sorted.png)
 
-![Traffic 298 Drops Project](TL-03-04-Traffic-298Drops-Project.png)
+![Traffic 298 Drops Project](screenshots/TL-03-04-Traffic-298Drops-Project.png)
 
 ---
 
@@ -95,9 +94,9 @@ CommonSecurityLog
 ```
 *Result: 46 completed outbound sessions on port 443 to external IPs — consistent with C2 behavior. Confirmed C2 pending deeper forensics.*
 
-![Activity End 46 Results](TL-03-08-Activity-End-46Results.png)
+![Activity End 46 Results](screenshots/TL-03-08-Activity-End-46Results.png)
 
-![C2 External IPs Port 443](TL-03-09-C2-ExternalIPs-Port443.png)
+![C2 External IPs Port 443](screenshots/TL-03-09-C2-ExternalIPs-Port443.png)
 
 ---
 
@@ -108,7 +107,7 @@ CrowdStrikeDetections
 ```
 *Result: report.exe — C:\Users\mirage\Downloads\report.exe. GlobalPrevalence = rare. Not quarantined. Parent = explorer.exe. Critical severity. SHA256: [redacted for lab realism]*
 
-![CrowdStrike ReportExe](TL-03-05-CrowdStrike-ReportExe.png)
+![CrowdStrike ReportExe](screenshots/TL-03-05-CrowdStrike-ReportExe.png)
 
 ---
 
@@ -119,7 +118,7 @@ CrowdStrikeHosts
 ```
 *Result: srv-file01 = 10.0.0.20, ExternalIp = 167.236.57.104, agent_id = cs-aid-srvfile-0008.*
 
-![CrowdStrikeHosts SrvFile01](TL-03-06-CrowdStrikeHosts-SrvFile01.png)
+![CrowdStrikeHosts SrvFile01](screenshots/TL-03-06-CrowdStrikeHosts-SrvFile01.png)
 
 ---
 
@@ -130,7 +129,7 @@ CrowdStrikeHosts
 ```
 *Result: 2 Dell desktops confirmed mapped to 10.0.1.50 — win11a is the scanner host.*
 
-![CrowdStrikeHosts Win11a](TL-03-07-CrowdStrikeHosts-Win11a.png)
+![CrowdStrikeHosts Win11a](screenshots/TL-03-07-CrowdStrikeHosts-Win11a.png)
 
 ---
 
@@ -141,8 +140,7 @@ CrowdStrikeDetections
 ```
 *Result: tactic = Credential Access (TA0006), technique = OS Credential Dumping (T1003), display_name = "Credential Dumping via LSASS". Hostname = srv-file01. MaxSeverity = Critical (80). SHA256: [redacted for lab realism]*
 
-![LSASS SrvFile01 Confirmed](TL-03-10-LSASS-SrvFile01-Confirmed.png)
-
+![LSASS SrvFile01 Confirmed](screenshots/TL-03-10-LSASS-SrvFile01-Confirmed.png)
 ---
 
 **Step 9 — Okta Identity Pivot**
@@ -152,7 +150,7 @@ OktaV2_CL
 ```
 *Result: user.session.start → user.account.privilege.grant (super admin) → system.api_token.create → user.mfa.factor.deactivate → user.mfa.factor.reset_all → user.mfa.factor.update. Full account takeover confirmed.*
 
-![Okta SuperAdmin MFAWipeout](TL-03-11-Okta-SuperAdmin-MFAWipeout.png)
+![Okta SuperAdmin MFAWipeout](screenshots/TL-03-11-Okta-SuperAdmin-MFAWipeout.png)
 
 ---
 

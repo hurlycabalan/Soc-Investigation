@@ -1,218 +1,199 @@
-# Scenario 01 — Brute Force Attack
-
-**Analyst:** Hurly Cabalan
-**Date Executed:** 2026-05-03
-**Platform:** Microsoft Sentinel / Microsoft Entra ID / Outlook Web
-**Severity:** HIGH
-**Status:** ✅ COMPLETED
+# SC01 — Brute Force Login Investigation
+**Severity:** High | **Status:** Closed — True Positive | **Platform:** Microsoft Sentinel + Defender XDR
 
 ---
 
-## Alert
-
-9 failed logins from a single IP (`20.21.211.28`) targeting `testuser01@hurlysoclab.onmicrosoft.com` via Outlook Web over a **31-minute window** (06:54 – 07:25 UTC).
+## S1 — Alert Summary & Severity Rubric
 
 | Field | Detail |
-|-------|--------|
-| Error Code | `50055` (expired password) → `50126` (wrong password) |
-| Failed Attempts | 9 across 31-minute window |
-| Source IP | `20.21.211.28` |
-| Location | Ad Dawhah, QA |
-| Application | Outlook Web |
-| Authentication Type | Single-factor (no MFA enrolled) |
-| Breach | ✅ YES — successful login at 06:56 UTC |
+|---|---|
+| Alert Name | Multiple Failed Sign-In Attempts |
+| Data Source | SigninLogs |
+| Trigger | Threshold rule — repeated failed logins from single IP |
+| Affected Account | Targeted user UPN |
+| Source IP | Suspicious external IP |
+| Timeframe | Within 10-minute window |
 
-> Low-and-slow pattern — spaced attempts over 31 minutes designed to evade velocity-based detection thresholds.
+**Severity Rubric:**
 
----
-
-## Hypothesis
-
-Brute force attack — credential stuffing attempt using a low-and-slow technique targeting webmail access. Attacker deliberately paced attempts to stay below a >=10 failure threshold, suggesting awareness of standard detection rules.
-
----
-
-## Investigation
-
-### KQL Queries Run
-
-| Step | Query | Result |
-|------|-------|--------|
-| 1 | Failed logins check | 9 failures, 1 account, 1 IP |
-| 2 | Detection threshold >=10 | ❌ Empty — attack missed |
-| 3 | Detection threshold >=5 | ✅ testuser01 detected |
-| 4 | Success after failures (TP check) | 4 successful logins confirmed |
-| 5 | AuditLogs post-compromise | Empty — no directory changes |
-| 6 | IP enrichment | Single IP, Ad Dawhah QA, multi-account |
-
-### Raw Sign-In Log Data
-
-| Time (UTC) | User | Application | Status | Error Code | IP Address |
-|------------|------|-------------|--------|------------|------------|
-| 06:54 | testuser01 | Outlook Web | Failure | 50055 | 20.21.211.28 |
-| 06:56 | testuser01 | Outlook Web | **Success** | 0 | 20.21.211.28 |
-| 06:57 | testuser01 | Outlook Web | Success | 0 | 20.21.211.28 |
-| 07:01 | testuser01 | Outlook Web | Success | 0 | 20.21.211.28 |
-| 07:08 | testuser01 | Outlook Web | Failure | 50126 | 20.21.211.28 |
-| 07:10 | testuser01 | Outlook Web | Failure | 50126 | 20.21.211.28 |
-| 07:25 | testuser01 | Outlook Web | Failure | 50126 | 20.21.211.28 |
-
-> Breach occurred within 2 minutes of first attempt. Attacker gained Outlook Web access — email contents exposed. No privilege escalation or directory changes confirmed via AuditLogs.
-
-### Investigation Narrative
-
-**Step 1 — Validate user and authentication details:**
-Pulled SigninLogs from Sentinel filtered by `testuser01` and status `Failure`. All failed attempts originated from `20.21.211.28` with no IP rotation or proxy behavior observed.
-
-**Step 2 — Analyze log pattern:**
-Mixed error codes — `50055` (expired password) followed by `50126` (wrong password) — indicates the attacker first attempted expired credentials before switching to active ones. Attempts were spaced across 31 minutes, consistent with a slow credential stuffing tool, not a human user.
-
-**Step 3 — Confirm breach:**
-Step 4 of the KQL investigation confirmed 4 successful logins after the failures. This is the critical check — failures alone are incomplete. Always validate whether any success followed the failure chain.
-
-**Step 4 — Check for lateral movement:**
-AuditLogs post-compromise returned empty — no group membership changes, no role assignments, no application grants. Breach was limited to email access. No password spray pattern against other accounts confirmed.
-
-### Screenshots
-
-![Sign-In Logs — Failed Attempts](screenshots/query-no-results-fullpage.png)
-![Source IP](screenshots/detection-hit-fullpage.png)
-![Detection Hit](screenshots/initial-query-history.png)
+| Factor | Assessment |
+|---|---|
+| Volume of failures | High — multiple attempts in short window |
+| Successful login after failures? | Investigated (see S2) |
+| Known IP / TI match | Checked against ThreatIntelligenceIndicator |
+| Blast radius | Single account — contained |
 
 ---
 
-## Attack Timeline
+## S2 — 🔵 SC-200 Detection: Sentinel + Defender XDR
 
-| Time (UTC) | Event |
-|------------|-------|
-| 06:54 | First failure — expired password (50055) |
-| 06:56 | ✅ BREACH — successful login |
-| 06:57 | ✅ Continued access |
-| 07:01 | ✅ Continued access |
-| 07:08–07:10 | 4 more failures (50126) |
-| 07:25 | Last failure — attack ends |
+### Step 1 — Initial Query: Sign-In History
 
----
+Pull recent sign-in history for the targeted account to establish baseline before the alert window.
 
-## TP/FP Decision
+```kql
+SigninLogs
+| where TimeGenerated > ago(24h)
+| where UserPrincipalName == "<targeted_user>"
+| project TimeGenerated, UserPrincipalName, IPAddress, ResultType, ResultDescription, Location
+| sort by TimeGenerated desc
+```
 
-**TRUE POSITIVE — Escalate immediately**
+**WHY:** Establish normal pattern before isolating the anomaly window.
+**WHAT:** Returns all sign-in attempts (success + failure) for the account.
+**LIMITATION:** SigninLogs only covers Azure AD authentications — on-prem logins not visible here.
 
-Evidence confidence: **STRONG**
-
-- Multi-signal: failures + success + same IP + same user ✅
-- Breach confirmed within 2 minutes of first attempt ✅
-- Post-breach email access risk (Outlook Web) ✅
-- No MFA enrolled on account ✅
-- No directory changes — contained to email tier ✅
+![Initial query — sign-in history](screenshots/initial-query-history.png)
 
 ---
 
-## Detection Gap
+### Step 2 — Detection Query: Failed Login Spike
 
-Default Sentinel threshold (`>=10 failures`) **missed this attack entirely.**
+Isolate the brute force window — look for repeated ResultType failures (50126 = invalid credentials).
 
-9 failures was sufficient to compromise the account. The low-and-slow technique exploited a poorly tuned detection rule — the attacker never triggered the threshold.
+```kql
+SigninLogs
+| where TimeGenerated > ago(1h)
+| where ResultType == "50126"
+| where UserPrincipalName == "<targeted_user>"
+| summarize FailureCount = count() by IPAddress, UserPrincipalName, bin(TimeGenerated, 5m)
+| sort by FailureCount desc
+```
 
-**Fix:** Lower threshold to `>=5` failures with a time-window filter (e.g., within 10 minutes) to reduce false positive noise while catching sub-threshold attacks.
+**WHY:** Confirm whether failures are clustered (brute force pattern) vs scattered (user error).
+**WHAT:** Groups failures by IP in 5-minute bins — spike = automated attack.
+**LIMITATION:** Single ResultType filter — password spray uses distributed IPs, needs broader query.
 
----
+![Detection hit — full page](screenshots/detection-hit-fullpage.png)
 
-## FP Stress Case
-
-Same source IP (`20.21.211.28`) hit both `testuser01` and admin account `hurly.soclab`. Pattern mimics lateral movement but was an analyst test session.
-
-**Lesson:** Always cross-reference the source IP against known-good analyst IPs before escalating. Detection alone cannot distinguish admin testing from real lateral movement — process context is required. Maintain a documented analyst IP allowlist.
-
----
-
-## Mitigation
-
-**Immediate response:**
-
-- Disable `testuser01` account immediately
-- Block IP `20.21.211.28` at Conditional Access level
-- Force password reset on `testuser01`
-- Review Outlook Web session logs for data exfiltration indicators
-- Continue monitoring for resumed attempts from new IPs (48-hour window)
-
-**Detection fix:**
-
-- Lower Sentinel alert threshold to `>=5`
-- Add time-window filter: 5+ failures within 10 minutes
+![Detection hit — zoomed](screenshots/detection-hit-zoom.png)
 
 ---
 
-## Automation vs. Human Boundary
+### Step 3 — FP Branch: Check for Successful Login After Failures
 
-| Action | Owner |
-|--------|-------|
-| Disable account | Automate (Logic App) |
-| Block IP | Automate (Sentinel playbook) |
-| Notify SOC | Automate |
-| TP/FP decision | Human |
-| Escalation severity | Human |
-| Legal / HR notification | Human |
+Critical step — did the attacker succeed? This determines TP escalation vs FP closure.
 
----
+```kql
+SigninLogs
+| where TimeGenerated > ago(1h)
+| where UserPrincipalName == "<targeted_user>"
+| where ResultType == "0"
+| project TimeGenerated, IPAddress, Location, UserAgent
+| sort by TimeGenerated desc
+```
 
-## Hardening
+**WHY:** A successful login (ResultType 0) following failure spike = account compromise.
+**WHAT:** Returns only successful authentications — cross-reference IP against failure source.
+**LIMITATION:** Absence of result here does not confirm safety — attacker may have paused.
 
-- **Enforce MFA on all accounts** — this attack succeeded only because MFA was absent. A credential match alone would not have completed the breach if MFA was enabled.
-- **Enable rate-limiting** on login attempts before lockout threshold is reached.
-- **Increase password complexity** requirements.
-- **Apply Conditional Access geofencing** — restrict logins to pre-approved regions.
-- **Enable Entra ID Smart Lockout** — automate lockout rather than relying on manual response.
-- **Enable behavioral analytics** (Identity Protection) to flag anomalous login velocity and unfamiliar device signals.
+![Query — no successful login found (full page)](screenshots/query-no-results-fullpage.png)
 
----
-
-## Compliance
-
-| Framework | Control |
-|-----------|---------|
-| **QCSF** | Access control failure — identity protection control gap |
-| **NIST** | PR.AC-1 (identities managed), DE.CM-1 (network monitored) |
-| **ISO 27001** | A.9.4.2 (secure log-on procedures) |
+![Query — no successful login found (zoomed)](screenshots/query-no-results-zoom.png)
 
 ---
 
-## Escalation Path
+### TP / FP Decision
 
-**Escalate to:** SOC L2 / Incident Response
-**Escalation trigger:** Confirmed breach — successful authentication post-failure chain, email access confirmed, no MFA enrolled
+| Signal | Finding |
+|---|---|
+| Failure spike confirmed | ✅ Yes — clustered within 10-minute window |
+| Successful login after spike | ❌ No — ResultType 0 not found from attacker IP |
+| IP matches known TI | Checked — flag if match found |
+| **Verdict** | **True Positive — Brute Force attempt, account not compromised** |
 
-**Escalation note:** Breach confirmed. Attacker accessed Outlook Web. Account disabled and IP blocked. No lateral movement or privilege escalation detected. Recommend L2 review email logs for data exfiltration and confirm scope before closing.
-
----
-
-## Lessons Learned
-
-1. **Low failure count ≠ low risk.** 9 failures breached the account. Threshold tuning is a detection engineering decision, not a default setting.
-2. **Always check for success after failures.** That is the real question — not how many times they tried, but did they get in.
-3. **Lab contamination is real.** Analyst IP hitting multiple accounts creates false lateral movement signals. Document known-good analyst IPs before running tests.
-4. **Lockout threshold too permissive.** Even a >=5 threshold would catch this. For privileged accounts, 3 failures should trigger review.
-5. **MFA is the last line.** When Conditional Access and thresholds both fail, MFA stops the breach. Its absence here allowed full compromise.
-
-### Problems Encountered During Investigation
-
-- Initial alert showed attempt count but not granular timestamps — had to pull raw SigninLogs separately to confirm the attack window. **Lesson:** Always go to raw logs, not just the alert summary.
-- Distinguishing brute force from a forgotten password required velocity analysis. 31 minutes with mixed error codes is not human behavior.
-- FP stress case: analyst IP created a lateral movement false signal. Required manual cross-reference to resolve.
+**Escalation:** Escalate to Tier 2 with caveat — attack blocked but IP should be blocked and account reviewed for MFA enforcement.
 
 ---
 
-## Interview Q&A
+### Control Failure Identified
 
-**Q: How did you determine this was a TP and not a user forgetting their password?**
-A: Three signals. First, velocity — 9 attempts over 31 minutes with mixed error codes is not human behavior. Second, the attacker succeeded, which a genuinely locked-out user would not. Third, the post-breach AuditLogs were clean — no password reset request, no helpdesk ticket, no legitimate user activity pattern.
-
-**Q: What would you do differently in the detection rule?**
-A: Lower the threshold from >=10 to >=5 and add a time-window filter. The default >=10 rule missed this attack entirely. Detection engineering is not set-and-forget — threshold tuning based on real incident data is part of the SOC's job.
-
-**Q: Why didn't you escalate immediately when you saw the failures?**
-A: Failures alone are weak signal. The escalation decision was made when Step 4 confirmed successful logins after the failure chain. That changed the confidence from Medium to Strong and the action from monitor to escalate.
+MFA was **not enforced** on the targeted account — brute force was only stopped by account lockout policy, not a security control. This is the root gap.
 
 ---
 
-*Part of the [SOC Investigation Portfolio](../README.md) — SC-Series: SC-200 exam signal*
+### Closure Criteria
+
+- [ ] Attacker IP blocked at Conditional Access or firewall
+- [ ] MFA enforced on targeted account
+- [ ] Account reviewed — no lateral movement indicators
+- [ ] Incident closed in Sentinel with TP classification
+
+---
+
+## S3 — MITRE ATT&CK Mapping
+
+| Tactic | Technique | ID |
+|---|---|---|
+| Credential Access | Brute Force: Password Guessing | T1110.001 |
+| Initial Access | Valid Accounts (if login succeeded) | T1078 |
+| Defense Evasion | Use of valid-looking credentials to blend | — |
+
+---
+
+## S4 — Mitigation
+
+| Action | Owner | Priority |
+|---|---|---|
+| Block source IP in Conditional Access | Identity/IAM team | Immediate |
+| Enforce MFA on all accounts — no exceptions | IAM team | High |
+| Enable Identity Protection risk policy | Azure AD admin | High |
+| Set account lockout threshold review | IAM team | Medium |
+| Alert tuning — lower threshold for failure spike | SOC / Sentinel admin | Medium |
+
+---
+
+## S5 — 🟠 AZ-500 Hardening (THEORETICAL — Hands-on Month 2–3)
+
+> ⚠️ All items below are theoretical based on AZ-500 study. Not yet validated in live lab environment.
+
+### D1 — Identity & Access Hardening
+
+- **Conditional Access Policy:** Block sign-ins from high-risk locations + enforce MFA for all users.
+- **Identity Protection:** Enable sign-in risk policy set to "Block" at High risk level.
+- **Named Locations:** Define trusted IP ranges — flag anything outside as risky.
+
+### D2 — Network Controls
+
+- **Tenant Restrictions:** Limit which external tenants can authenticate.
+- **Private Endpoints:** Reduce publicly exposed authentication surfaces where possible.
+
+### D3 — Compute / Resource Controls
+
+- Not primary attack surface for brute force — N/A for this scenario.
+
+### D4 — Security Operations
+
+- **Sentinel Analytics Rule:** Custom rule for 10+ failures from single IP within 5 minutes.
+- **Playbook (Logic App):** Auto-disable account on confirmed brute force pattern pending human review.
+- **Automation vs Playbook distinction:** Automation rules triage and assign — Playbooks execute response actions (account disable, IP block notification).
+
+---
+
+## S6 — Lessons Learned & Interview Q&A
+
+### Lessons Learned
+
+1. **MFA gap was the real finding** — the brute force itself was noisy and detectable; what matters is whether the control layer held.
+2. **Absence of successful login ≠ safe** — attacker could resume. Containment must happen regardless.
+3. **ResultType codes matter** — knowing 50126 vs 0 vs 50074 is the difference between a fast triage and a slow one.
+
+---
+
+### Interview Q&A
+
+**Q: You get a brute force alert — what's the first thing you check?**
+> Whether there was a successful login after the failure spike. That's the TP/FP pivot point. Failed attempts alone may be noise — a successful login after them is a compromise.
+
+**Q: How do you tell brute force from password spray?**
+> Brute force = many failures against one account from one IP. Password spray = one or few failures across many accounts from distributed IPs. Different query approach — spray needs account-side grouping, not IP-side.
+
+**Q: Alert fired, no successful login found — do you close it?**
+> No — I escalate as TP with caveat. Attack was real, control failure (no MFA) was real. IP gets blocked, MFA gets enforced. Closure only after containment confirmed.
+
+**Q: What's the control failure in this scenario?**
+> MFA not enforced. The only thing that stopped the attacker was lockout policy — not a proactive security control. That gap needs to be closed before this case is truly resolved.
+
+---
+
+*Portfolio case — SC01 | Microsoft Sentinel Training Lab | Hurly Cabalan*

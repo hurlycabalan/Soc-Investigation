@@ -1,139 +1,147 @@
-# Exercise 04 — Automation Rules
+# Exercise 06 — Port Scan Detection & Threshold Tuning
 
-**SC-200 Domain:** D3 Microsoft Sentinel (50–55%)  
+**SC-200 Domain:** D3 Microsoft Sentinel (50–55%) | D1 Defender XDR (25–30%)  
+**Rule:** `Lab Stage E2 - Port Scan Detection (Palo Alto)`  
 **Difficulty:** Beginner | **Status:** ✅ Complete
 
 ---
 
 ## What This Exercise Covers
 
-Manual incident triage doesn't scale. **Automation rules** in Microsoft Sentinel allow no-code, automatic enrichment and routing of incidents the moment they're created — without needing a Logic App (playbook). This exercise creates two automation rules: one that tags AWS threat incidents, and one that escalates log-clearing events to Critical severity. These are the kind of workflow improvements that directly reduce analyst MTTD (Mean Time to Detect) and MTTR (Mean Time to Respond).
+A detection rule that fires on everything is worse than no rule — alert fatigue will bury real threats. This exercise covers **threshold tuning** for a port scan detection rule: establish a baseline from real data, choose a statistically informed threshold, and enrich the alert with context fields that help analysts triage faster. Threshold tuning is one of the most common day-to-day SOC analyst tasks in a mature environment.
 
 ---
 
-## Automation Rules vs. Playbooks — Key Distinction
+## Attack Context
 
-> **SC-200 exam critical:** This distinction appears on the exam. Know it cold.
+**MITRE T1046 — Network Service Discovery**
 
-| | Automation Rules | Playbooks (Logic Apps) |
-|--|-----------------|----------------------|
-| **Requires code?** | ❌ No | ✅ Yes (Logic App designer) |
-| **Requires Azure resources?** | ❌ No | ✅ Yes (Logic App instance) |
-| **Actions available** | Tags, severity, owner, status, suppress, run playbook | Anything — block IP, disable account, send Teams/email |
-| **Execution trigger** | Incident created or updated | Triggered by automation rule or manually |
-| **Human decision required?** | No (runs automatically) | No (but humans review results) |
-| **Who owns TP/FP decision?** | Human analyst | Human analyst (always) |
-
-**The rule:** Automation rules handle **triage automation** (tagging, routing, severity). Playbooks handle **response automation** (containment, notification). Humans own **all decisions** (TP/FP, escalation, legal action).
+In the lab attack chain, the attacker scans the internal network after establishing a C2 channel (Stage 3.5), looking for lateral movement targets. Palo Alto logs denied connections with actions `drop`, `deny`, or `reset-both`. When `ApplicationProtocol == "incomplete"`, the session never completed — a strong indicator of scanning vs. legitimate traffic (legitimate applications complete their protocol handshake).
 
 ---
 
 ## Lab Steps Completed
 
-### Step 1 — Review Existing Incidents
+### Step 1 — Establish a Baseline
 
-Navigated to the incident queue to identify automation targets.
+Before setting any threshold, measured normal port diversity in the environment.
 
-**Navigation path:**  
-Microsoft Sentinel → Threat management → Incidents
+```kql
+CommonSecurityLog
+| where TimeGenerated > ago(24h)
+| where DeviceVendor == "Palo Alto Networks"
+| where Activity in ("drop", "deny", "reset-both")
+| where ApplicationProtocol == "incomplete"
+| summarize DistinctPorts = dcount(DestinationPort) by SourceIP, DestinationIP
+| summarize
+    avg_ports = avg(DistinctPorts),
+    p50 = percentile(DistinctPorts, 50),
+    p90 = percentile(DistinctPorts, 90),
+    p95 = percentile(DistinctPorts, 95),
+    p99 = percentile(DistinctPorts, 99),
+    max_ports = max(DistinctPorts)
+```
 
-Incidents visible from lab rules:
-- `Lab Stage 3.5 - Internal port scan detected (Palo Alto)`
-- `Lab Stage 6 - Large data exfiltration to external IP (Palo Alto)`
-- `Lab Stage 4 - Account Takeover Chain (Okta)`
+> ⚠️ **Lab-level KQL** — uses `percentile()` which is beyond SC-200 exam scope. **SC-200 relevance:** the `dcount()` aggregation and threshold reasoning (`where DistinctPorts > X`) are core exam concepts.
 
-📸 *[Screenshot — Sentinel incidents list showing lab-generated incidents]*
+**Baseline interpretation:**
 
-**Lab note:** Automation rules with the "Analytic rule name" condition work with **Sentinel analytics rules** (not custom detection rules in Defender). The lab's analytics rules include: `AWS Config Service Resource Deletion Attempts`, `Suspicious AWS CLI Command Execution`, `NRT Security Event log cleared`, `Scheduled Task Hide`.
+| Percentile | Meaning | Threshold Decision |
+|------------|---------|-------------------|
+| p50 | Median behaviour = "normal" | Ignore — too low, every scanner triggers |
+| p90 / p95 | Common higher-end activity | Start here for noisy environments |
+| p99 | Rare but still observed | Good starting point for most environments |
+| max_ports | Most extreme case | Don't use — one event becomes your threshold |
 
----
+**Threshold selection rule:**
 
-### Step 2 — Create Automation Rule: Tag AWS Threat Incidents
+| p99 value | Start with threshold |
+|-----------|---------------------|
+| 10 or lower | `> 15` |
+| 11–20 | `> 20` |
+| Above 20 | p99 + 20%, rounded up |
 
-**Navigation path:**  
-Microsoft Sentinel → Configuration → Automation → + Create → Automation rule
+**Threshold used in this lab:** `> 20`
 
-**Rule configuration:**
-
-| Field | Value |
-|-------|-------|
-| **Name** | `Tag AWS threat incidents` |
-| **Rule type** | Standard rule |
-| **Trigger** | When incident is created |
-| **Condition** | Analytic rule name **Contains** `AWS` |
-| **Action 1** | Add tags → `cloud-threat` |
-| **Action 2** | Add tags → `aws` |
-| **Order** | 1 |
-| **Status** | Enabled |
-
-**Why "Contains" over exact match:** The condition `Contains AWS` matches BOTH `AWS Config Service Resource Deletion Attempts` AND `Suspicious AWS CLI Command Execution` with a single rule. Exact match would require two separate rules.
-
-📸 *[Screenshot — automation rule creation wizard showing condition and action configuration]*
-
----
-
-### Step 3 — Create Automation Rule: Escalate Log Cleared Events
-
-**Rule configuration:**
-
-| Field | Value |
-|-------|-------|
-| **Name** | `Escalate log cleared events` |
-| **Rule type** | Standard rule |
-| **Trigger** | When incident is created |
-| **Condition** | Analytic rule name **Contains** `Security Event log cleared` |
-| **Action 1** | Add tags → `defense-evasion` |
-| **Action 2** | Add tags → `log-tampering` |
-| **Action 3** | Change severity → **Critical** |
-| **Order** | 2 |
-| **Status** | Enabled |
-
-**Why this matters:** Log clearing (T1562.008 — Defense Evasion) is a high-priority signal. An attacker who can clear Windows Security Event logs is actively trying to blind the SOC. Auto-escalating to Critical ensures it doesn't get buried in a backlog of Medium incidents.
-
-📸 *[Screenshot — second automation rule showing three actions including severity escalation]*
+📸 *[Screenshot — baseline query results showing percentile distribution of DistinctPorts]*
 
 ---
 
-### Step 4 — Understand Rule Ordering and Logic
+### Step 2 — Update the Rule with the Tuned Detection Query
 
-**Final automation rules list:**
+Opened: Defender portal → Hunting → Custom detection rules → `Lab Stage E2 - Port Scan Detection (Palo Alto)` → Edit
 
-| Order | Name | Trigger | Condition | Actions |
-|-------|------|---------|-----------|---------|
-| 1 | Tag AWS threat incidents | Incident created | Rule name contains "AWS" | Add tags: cloud-threat, aws |
-| 2 | Escalate log cleared events | Incident created | Rule name contains "Security Event log cleared" | Add tags: defense-evasion, log-tampering; Change severity → Critical |
+Replaced the query with the tuned and enriched version:
 
-**Execution logic:**
-- Rules run in **priority order** (lowest number first)
-- If multiple rules match the same incident, all execute sequentially
-- Conditions use **AND** logic by default — all conditions must match
-- A single incident CAN trigger multiple automation rules if it matches multiple conditions
+```kql
+CommonSecurityLog
+| where TimeGenerated > ago(4h)
+| where DeviceVendor == "Palo Alto Networks"
+| where Activity in ("drop", "deny", "reset-both")
+| where ApplicationProtocol == "incomplete"
+| summarize
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated),
+    DistinctPorts = dcount(DestinationPort),
+    PortList = make_set(DestinationPort, 25),
+    EventCount = count()
+    by SourceIP, DestinationIP, SourceHostName, SourceUserName
+| extend ScanDurationMinutes = datetime_diff('minute', LastSeen, FirstSeen)
+| extend PortsPerMinute = iff(
+    ScanDurationMinutes > 0,
+    todouble(DistinctPorts) / todouble(ScanDurationMinutes),
+    todouble(DistinctPorts)
+)
+| where DistinctPorts > 20
+| project
+    FirstSeen,
+    LastSeen,
+    SourceIP,
+    DestinationIP,
+    DistinctPorts,
+    EventCount,
+    ScanDurationMinutes,
+    PortsPerMinute,
+    PortList,
+    SourceHostName,
+    SourceUserName
+| extend
+    TimeGenerated = FirstSeen,
+    AccountUpn = SourceUserName,
+    DeviceName = SourceHostName,
+    RemoteIP = DestinationIP,
+    ReportId = tostring(hash_sha256(strcat(SourceIP, DestinationIP, tostring(DistinctPorts))))
+```
 
-📸 *[Screenshot — Automation page showing both rules in the list with order numbers]*
+> ⚠️ **Lab-level KQL** — uses `extend`, `iff()`, `todouble()`, `datetime_diff()`, `make_set()`, `hash_sha256()`. Beyond SC-200 exam scope. **SC-200 relevance:** `dcount()`, `summarize`, `where DistinctPorts > 20`, and `Activity in (...)` are all core exam-level operators.
+
+📸 *[Screenshot — tuned query in Advanced Hunting editor with results showing enrichment fields]*
 
 ---
 
-### Step 5 — Verify the Automation Rules
+### Step 3 — Validate the Results
 
-Confirmed tags and severity changes were applied to newly triggered incidents.
+Post-update validation checklist:
 
-**Verification path:**  
-Microsoft Sentinel → Threat management → Incidents → Find a matching incident → Check tags and severity
+- ✅ Query returns realistic scan candidates (not empty, not flooding)
+- ✅ Alert volume is manageable (not overwhelming the incident queue)
+- ✅ `PortList` and `DistinctPorts` visible in output — analyst can immediately see scope
+- ✅ `PortsPerMinute` adds triage context — fast scan (>10/min) more likely adversarial
+- ✅ No obvious FPs from legitimate multi-port services (load balancers, monitoring agents)
 
-📸 *[Screenshot — incident detail showing auto-applied tags "cloud-threat" and "aws"]*  
-📸 *[Screenshot — log-cleared incident showing Critical severity and tags "defense-evasion", "log-tampering"]*
+📸 *[Screenshot — validation query results showing scan candidates with PortsPerMinute context]*
 
 ---
 
-## Additional Automation Actions (Not Configured — Reference)
+## Enrichment Fields Explained — Why Each One Matters
 
-| Action | Use Case |
-|--------|---------|
-| **Assign owner** | Route phishing incidents to email security team |
-| **Change status** | Auto-close known false positives (e.g., scanner from trusted IP) |
-| **Run playbook** | Trigger Logic App to send Teams alert, block IP, disable account |
-| **Add task** | Create investigation checklist for assigned analyst |
-| **Suppress** | Deduplicate repeated incidents from same rule |
+| Field | What It Shows | Analyst Use |
+|-------|--------------|-------------|
+| `DistinctPorts` | Unique ports targeted | Scope of scan — more ports = more systematic |
+| `PortList` | Which specific ports | Identifies scan type (SMB ports → lateral movement prep, web ports → service discovery) |
+| `EventCount` | Total denied connections | Volume indicator — 20 distinct ports vs. 2000 packets are different stories |
+| `ScanDurationMinutes` | How long the scan ran | Burst (60 sec) vs. slow scan (30 min) — slow scans evade threshold triggers |
+| `PortsPerMinute` | Scan speed | >10/min → aggressive, likely automated. <1/min → slow scan, may be manual/stealthy |
 
 ---
 
@@ -141,32 +149,29 @@ Microsoft Sentinel → Threat management → Incidents → Find a matching incid
 
 | Concept Practiced | SC-200 Domain | Exam Topic |
 |-------------------|---------------|------------|
-| Automation rule vs. playbook distinction | D3 Sentinel | Automation concepts |
-| Trigger types (incident created vs. updated) | D3 Sentinel | Rule trigger configuration |
-| Condition logic (rule name, entity, severity) | D3 Sentinel | Automation rule conditions |
-| Tag-based incident management | D3 Sentinel | Incident enrichment workflow |
-| Priority ordering | D3 Sentinel | Rule execution order |
-| Playbook integration (concept) | D3 Sentinel | Logic App trigger |
+| `dcount()` for distinct value counting | D3 Sentinel | KQL aggregation functions |
+| Threshold-based detection (`where > N`) | D3 Sentinel | Detection rule logic |
+| `Activity in (...)` multi-value filter | D3 Sentinel | KQL operators |
+| Custom detection rule editing | D1 Defender XDR | Rule modification |
+| Lookback alignment (4h query, 1h schedule) | D1 Defender XDR | Rule schedule and frequency |
 
-**High-frequency exam question pattern:**  
-*"Which automation action requires a Logic App?"* → Answer: Run playbook. All other actions (tag, severity, owner, status, suppress) are native automation rule actions — no Logic App needed.
+**Key exam rule:** Lookback period must be ≥ (schedule frequency × buffer factor). For a rule running every 1 hour with a 4-hour lookback, there's a 4× overlap. This prevents missed events between runs but creates some alert duplication — acceptable tradeoff for coverage.
 
 ---
 
 ## MITRE ATT&CK
 
-| Technique | ID | Automation Rule Created |
-|-----------|----|------------------------|
-| Defense Evasion: Indicator Removal (Log Clearing) | T1562.008 | Escalate log cleared events → Critical |
-| Cloud resource abuse | T1496 | Tag AWS threat incidents → cloud-threat, aws |
+| Technique | ID | Description |
+|-----------|----|-------------|
+| Network Service Discovery | T1046 | Adversary scanning network to find open services before lateral movement |
 
 ---
 
 ## Key Takeaways
 
-- Automation rules = **no-code triage automation** — tags, severity, owner, status. Zero Azure resources required
-- Playbooks = **code-based response automation** — requires Logic App, used for containment and notification
-- Humans always own TP/FP decisions, escalation calls, and legal/policy decisions — automation never decides
-- Rule priority order matters — lower number executes first
-- `Contains` in rule name conditions is more flexible than exact match — one rule can target multiple analytics rules
-- Log clearing (T1562.008) is a Critical-severity signal that should always auto-escalate — if an attacker is clearing logs, they're already inside and aware of the SOC
+- **Measure before you tune** — running a baseline query first prevents setting thresholds too low (noise) or too high (misses)
+- `dcount()` is the go-to function for detecting anomalous diversity — distinct ports, distinct users, distinct countries
+- `make_set()` provides analyst context in the alert — seeing *which* ports were scanned is more useful than just the count
+- `ApplicationProtocol == "incomplete"` is the key filter for scan traffic in Palo Alto — completed sessions are legitimate traffic
+- Threshold tuning is iterative — start at p99 + buffer, review FPs after 1 week, adjust as needed
+- A scan that's **slow** (low PortsPerMinute) might still exceed the DistinctPorts threshold — time-based enrichment catches what count-only thresholds miss

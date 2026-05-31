@@ -1,104 +1,96 @@
-# SOC Investigation Portfolio
-**Hurly Jimenez Cabalan** | Aspiring SOC Analyst | Doha, Qatar  
-📧 hurly.soclab@outlook.com | 🔗 [LinkedIn](https://linkedin.com/in/hurlycabalan)
+# SOC Investigation Portfolio — Hurly Cabalan
+
+**Targeting:** SOC L1 Analyst roles in Qatar's cybersecurity market (MSSP focus)
+
+This portfolio demonstrates hands-on detection and investigation work across cloud, endpoint, identity, and network environments using Microsoft Sentinel. It covers alert triage, KQL-based log analysis, MITRE ATT&CK mapping, TP/FP decision-making, and incident documentation — the core skills required in a Tier 1 SOC role.
+
+> **Lab Environment:** Microsoft Sentinel deployed from the official [Azure Sentinel Training Lab](https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Microsoft-Sentinel-Training-Lab) into a personal Azure subscription (`soc-workspace`). Pre-recorded multi-vendor log data covering GCP, CrowdStrike, Okta, Palo Alto, AWS, and Microsoft Entra ID. All investigation work — KQL queries, TP/FP decisions, MITRE mapping, and documentation — is original.
 
 ---
 
-## About This Repository
+## Featured Investigations
 
-Structured detection and investigation portfolio built using **Microsoft Sentinel**, 
-**Defender XDR**, and a multi-vendor training lab environment simulating real MSSP 
-SOC operations. Every scenario follows a complete investigation lifecycle:
+These three investigations are the best representation of my analytical approach. Each includes a plain English summary, full KQL methodology, real query results, MITRE mapping, and hardening recommendations.
 
-> Alert → Hypothesis → KQL Investigation → TP/FP Decision → 
-> Mitigation → Lessons Learned → Interview Q&A
-
-**Target role:** SOC Analyst L1 — Qatar-based MSSPs (Meeza, Help AG, NTT DATA)  
-**Primary stack:** Microsoft Sentinel | Defender XDR | KQL | MITRE ATT&CK  
-**Certifications:** Google Cybersecurity Professional | Fortinet NSE 1 & 2 | 
-ISC2 CC (Candidate) | SC-200 (In Progress) | AZ-500 (In Progress)
+| # | Investigation | Data Source | Key Techniques | Evidence |
+|---|---|---|---|---|
+| [SC-06](./SC-06-GCPCloudAttack/) | GCP Cloud Attack: Privilege Escalation, Cryptomining & Data Exfiltration | GCPAuditLogs | T1098.001 · T1562.008 · T1530 · T1552 · T1496 | ✅ Real KQL results + screenshots |
+| [SC-01](./SC-01-BruteForce/) | Brute Force Attack — Identity Investigation | Okta / Entra ID | T1110.001 · T1078 | Investigation documented |
+| [SC-03](./SC-03/) | Credential-Based Attack | Multi-vendor | T1110 · T1621 | Investigation documented |
 
 ---
 
-## Repository Structure
+## Additional Investigations
 
----
+Extended lab work demonstrating breadth across attack types and vendor environments.
 
-## SC-Series — SC-200 Exam Scenarios
+**SC Series — Single-Vendor Scenarios**
 
-| Scenario | Title | Status | Key Skills |
-|---|---|---|---|
-| [SC01](SC01-BruteForce/evidence) | Brute Force Attack Detection | ✅ Complete | SignInLogs, KQL, TP/FP |
-| SC02 | Insider Threat | 🔄 In Progress | AuditLogs, Anomaly Detection |
-| SC03 | Phishing | 🔄 Planned | EmailEvents, URL Analysis |
-| SC04 | Account Takeover | 🔄 Planned | Identity Protection, MFA |
-| SC05 | Lateral Movement | 🔄 Planned | DeviceEvents, Process Tree |
-
----
-
-## TL-Series — Training Lab Investigations
-
-Multi-vendor environment: **CrowdStrike · Palo Alto · Okta · CloudTrail · GCP · MailGuard365**  
-All investigations include vendor-agnostic analysis + Microsoft/SC-200 translation layer.
-
-| Exercise | Title | Status | Key Skills |
-|---|---|---|---|
-| [TL-01](TL-01-Identity-Driven) | Identity-Driven Attack | ✅ Complete | Okta, SignInLogs, MFA Bypass |
-| TL-02 | Network Intrusion | 🔄 Planned | Palo Alto, NSG, KQL joins |
-| TL-03 | C2 Beacon Detection | ✅ Complete | CrowdStrike, C2 patterns |
-| [TL-04](TL-04-AutomationRule) | Automation Rule Troubleshooting | ✅ Complete | Logic Apps, Playbooks, Sentinel Automation |
-| TL-05 | Cross-Source Correlation | 🔄 Planned | Multi-vendor KQL, Graph |
-
----
-
-## KQL Drills
-
-SC-200 level KQL reference library — 10 drills covering core detection patterns.
-
-📄 [KQL Drills Reference](KQL-Drills)
-
-**Drill topics:** SignInLogs · AuditLogs · SecurityEvent · DeviceEvents · 
-AzureActivity · Brute Force · C2 Beacon · Account Takeover
-
----
-
-## Investigation Framework
-
-Every scenario is documented using a consistent 6-section structure:
-
-| Section | Content |
+| Folder | Scenario |
 |---|---|
-| S1 | Alert Summary — what fired, why it matters |
-| S2 | Investigation — KQL queries, timeline, evidence, TP/FP decision |
-| S3 | MITRE ATT&CK Mapping |
-| S4 | Mitigation — immediate response actions |
-| S5 | Hardening — AZ-500 control layer (Identity, Network, Compute) |
-| S6 | Lessons Learned + Interview Q&A |
+| [SC-02](./SC-02/) | Endpoint detection and process investigation |
+| [SC-04](./SC-04/) | Network-based lateral movement |
+| [SC-05](./SC-05/) | Cloud workload detection |
+
+**TL Series — Multi-Vendor Kill Chains**
+
+Constructed kill chain scenarios mapping attacker progression across multiple security vendors. Scenarios are narrative-documented with KQL written against vendor table schemas.
+
+| Folder | Scenario | Vendors |
+|---|---|---|
+| [TL-01](./TL-Series/TL-01/) | Identity-first attack | Okta → CrowdStrike |
+| [TL-02](./TL-Series/TL-02/) | Endpoint-first attack | CrowdStrike → Palo Alto |
+| [TL-03](./TL-Series/TL-03/) | Network-first reverse | Palo Alto → CrowdStrike → Okta |
+| [TL-04](./TL-Series/TL-04/) | Cloud-only attack | AWS → GCP |
+| [TL-05](./TL-Series/TL-05/) | Full kill chain capstone | MailGuard → Okta → CrowdStrike → Palo Alto → AWS → GCP |
 
 ---
 
-## Evidence Standards
+## Investigation Methodology
 
-All investigations use **real lab screenshots** with:
-- Azure tenant ID and timestamps
-- Analyst account (`hurly.soclab@outlook.com`) visible in JSON output
-- KQL queries written before documentation (no query = no GitHub entry)
-- One false assumption, one failed query, one uncertainty moment per scenario
+Every investigation in this portfolio follows the same structured approach:
 
-*Not copy-pasted. Real lab. Real errors. Real fixes.*
+1. **Hypothesis** — What am I looking for and why?
+2. **Query** — KQL written with explicit reasoning before execution
+3. **Expected vs Actual** — Did the data confirm or challenge the hypothesis?
+4. **TP/FP Decision** — Multi-source corroboration before escalating
+5. **MITRE Mapping** — Tactic and technique identified per finding
+6. **Hardening** — Specific controls recommended to prevent recurrence
+7. **Lessons Learned** — One uncertainty, one failed query, analyst reflection
+
+> Single query is never sufficient for TP/FP. Every escalation decision in this portfolio is backed by at least two correlated signals.
 
 ---
 
-## Certifications & Study Stack
+## Environment & Tools
 
-| Cert | Status |
+| Category | Detail |
 |---|---|
-| Google Cybersecurity Professional Certificate | ✅ Complete |
+| **SIEM** | Microsoft Sentinel (Azure Log Analytics) |
+| **Query Language** | KQL — `where`, `project`, `sort`, `summarize`, `contains`, `ago()`, `bin()` |
+| **Log Sources** | GCPAuditLogs, CrowdStrikeAlerts, OktaV2_CL, CommonSecurityLog (Palo Alto), AWSCloudTrail, SigninLogs |
+| **Frameworks** | MITRE ATT&CK, Evidence Confidence Model (Weak / Medium / Strong) |
+| **Documentation** | GitHub Markdown — scenario narrative, KQL, screenshots, TP/FP, MITRE, hardening, closure |
+
+---
+
+## Certifications & Learning
+
+| Credential | Status |
+|---|---|
+| Google Cybersecurity Certificate | ✅ Complete |
 | Fortinet NSE 1 & 2 | ✅ Complete |
-| ISC2 CC | ✅ Complete (Candidate) |
-| Microsoft SC-200 | 🔄 Month 2 — May 2026 |
-| Microsoft AZ-500 | 🔄 Month 3 — June 2026 |
+| TryHackMe SOC L1 Path | ✅ Complete |
+| Microsoft SC-200 (Security Operations Analyst) | 🔄 In progress — exam target July 2026 |
 
 ---
 
-*Built in Doha, Qatar | 2026*
+## Background
+
+I bring 16 years of client-facing and data-driven work in Qatar across Sony, Vodafone, and Nestlé — building the communication, analytical, and documentation discipline that SOC work demands. I transitioned into cybersecurity through structured self-study, hands-on lab work, and this investigation portfolio, targeting Tier 1 analyst roles at MSSPs in Qatar.
+
+I am available for a live demonstration of the Sentinel workspace and any investigation in this portfolio.
+
+---
+
+**Skills demonstrated across this portfolio:** Alert triage · KQL log analysis · Cloud threat detection · Endpoint investigation · Identity attack detection · MITRE ATT&CK mapping · TP/FP decision-making · Incident documentation · Security hardening recommendations · Multi-vendor log correlation

@@ -250,4 +250,20 @@ Initial `search * | distinct $table` with a narrow custom time range returned on
 
 ---
 
+## Lessons Learned
+
+**1. Time range is an investigation variable, not a UI setting.**
+My first `search *` returned only 2 tables because the custom time range didn't cover the pre-recorded data window. I almost concluded the lab had no vendor data. The fix — adding `ago(30d)` explicitly in the query — recovered 50 rows of attack evidence. In a real SOC, incorrect time scoping means missed detections. Always confirm your time range matches the suspected incident window before declaring a table empty.
+
+**2. Defense evasion is the highest-confidence TP indicator.**
+Any single action — a rogue service account, a suspicious compute instance — could have a benign explanation. But `DeleteSink` on `export-all-logs` has no legitimate use case in a production environment. When an attacker destroys their own audit trail, the intent is unambiguous. I learned to treat log deletion events as near-automatic True Positive escalation triggers, not just supporting evidence.
+
+**3. Two attack waves tell a different story than one.**
+The identical action sequence repeating on 5/2 and 5/6 changed my analysis from "isolated incident" to "persistent threat actor." The attacker anticipated remediation and pre-planned redeployment. This means containment must go beyond terminating the visible artifacts — the initial access vector that allowed the first wave must be found and closed, or the third wave is inevitable.
+
+**4. Broad-to-narrow query discipline prevents tunnel vision.**
+Starting with a full 50-row scope query before filtering saved me from missing the `UpdateSink` and `compute.instances.stop` events that weren't part of my initial hypothesis. Query 1 surfaced the full picture; Queries 2–5 confirmed specific phases. In a real investigation, jumping straight to a targeted query risks confirming a hypothesis while missing a parallel attack thread.
+
+---
+
 **Skills demonstrated:** Cloud threat detection · GCP audit log analysis · KQL investigation · MITRE ATT&CK mapping · Privilege escalation detection · Defense evasion identification · Multi-wave attack analysis · Incident documentation · Cloud security hardening

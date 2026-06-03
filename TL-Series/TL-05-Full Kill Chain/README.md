@@ -1,3 +1,6 @@
+> ⚠️ **CONSTRUCTED SCENARIO** — Sentinel Training Lab data expired June 3, 2026 before this lab session could be executed. All KQL queries, MITRE mappings, and investigation logic are based on the documented run sheet. No live screenshots available. This is consistent with the rest of the TL series (TL-01 through TL-04) which were also constructed due to schema/data availability constraints.
+
+---
 # TL-05 Run Sheet — Full Kill Chain (All 6 Vendors)
 **Saturday 9-Hour Boss Fight**  
 **Chain: MailGuard → Okta → CrowdStrike → PaloAlto → AWS → GCP**  

@@ -26,6 +26,10 @@
 | **Scope** | Critical | Full AWS IAM compromise + GCP project infrastructure deployed — blast radius spans two cloud environments |
 | **Business Criticality** | Critical | CloudTrail deleted + GCP logging tampered = attacker actively blinding defenders while maintaining persistent access |
 
+### Business Impact
+
+CloudTrail deletion eliminates AWS audit trail retroactively — if Sentinel had not already ingested the logs, the entire AWS evidence chain would be unrecoverable. GCP logging tampering mirrors this on the second platform. Both actions together constitute a deliberate compliance breach: CloudTrail is a mandatory control under SOC 2, PCI-DSS, and most enterprise cloud security baselines. The compute instances deployed on both AWS and GCP represent active financial impact (resource hijacking for cryptomining or C2 infrastructure) and availability risk if used to attack internal services. The backdoor service account with `roles/owner` binding means the attacker retains full GCP project access even after primary credential rotation — data exfiltration scope of `GetObject` and `storage.objects.get` events requires L2 data classification review before the blast radius can be closed.
+
 ### Attack Timeline
 
 | Time (UTC) | Platform | Event | Significance |
@@ -53,7 +57,7 @@
 ### What Happened (3-Sentence Story)
 Attacker `mirage@pkwork.onmicrosoft.com` authenticated to AWS from IP `198.51.100.42` and within the same second executed a fully scripted compromise — enumerating the entire IAM structure, escalating privileges, deploying compute infrastructure, creating a backdoor IAM user with programmatic access, and deleting CloudTrail to blind defenders. Four minutes later at 5:14 PM, the same IP pivoted to GCP and mirrored the attack — accessing cloud storage, escalating via IAM policy manipulation, creating two backdoor service accounts including `backdoor-svc-gcp@pocaas-pro...` with a dedicated access key, deploying three compute instances, and tampering with GCP logging. The same-second execution across 40+ events on both platforms confirms automated tooling; the `DeleteTrail` on AWS and `google.logging.v2.ConfigService` manipulation on GCP confirm a deliberate anti-forensics playbook executed on both clouds simultaneously.
 
-> **Note:** IP 198.51.100.42 uses RFC 5737 documentation range for safe public sharing.
+> **Note:** IP 198.51.100.42 uses RFC 5737 documentation range for safe public sharing. All AWS event timestamps show 5:10:11 PM — same-second clustering is consistent with scripted automation. In a live investigation, timestamp granularity and ingestion normalization would be verified before concluding scripted execution.
 
 ---
 
@@ -186,7 +190,7 @@ AWSCloudTrail
 | Persistence | T1098.001 — Account Manipulation: Additional Cloud Credentials | CreateAccessKey on AWS, CreateServiceAccountKey on GCP |
 | Defense Evasion | T1562.008 — Impair Defenses: Disable Cloud Logs | DeleteTrail (AWS), google.logging.v2.ConfigService (GCP) |
 | Impact | T1496 — Resource Hijacking | RunInstances (AWS), v1.compute.instances.insert x3 (GCP) — attacker compute deployed |
-| Lateral Movement | T1650 — Acquire Access | Cross-cloud pivot AWS → GCP using same credential set — 4-minute gap |
+| Lateral Movement | T1078.004 — Valid Accounts reused across platforms | Same credential set `mirage@pkwork.onmicrosoft.com` active on both AWS and GCP — 4-minute pivot window confirms cross-cloud credential reuse, not separate compromise |
 
 ![MITRE T1562.008 Technique](screenshots/TL-04-08-MITRE-T1562008.png)
 
@@ -281,7 +285,7 @@ AWSCloudTrail
 ---
 
 ## Closure Criteria
-- [x] Root cause identified — compromised `mirage@pkwork.onmicrosoft.com` credentials used in scripted cross-cloud attack
+- [x] Root cause assessed — activity consistent with use of compromised `mirage@pkwork.onmicrosoft.com` credentials in a scripted cross-cloud attack
 - [x] Blast radius mapped — AWS IAM fully enumerated, backdoor user created, compute deployed, CloudTrail deleted; GCP storage accessed, IAM escalated, backdoor service account created, compute deployed, logging tampered
 - [x] Containment actions defined — account disable, IP block, backdoor account deletion, compute termination, logging restoration, firewall rule removal
 - [x] Ownership assigned — L2 escalation with full evidence package; cross-reference TL-01 for campaign scope
@@ -317,7 +321,9 @@ AWSCloudTrail
 > Confirmed AWS: full IAM enumeration, privilege escalation, backdoor user with programmatic access, EC2 compute deployed, CloudTrail deleted, security group opened. Confirmed GCP: storage data accessed, IAM escalated, backdoor service account `backdoor-svc-gcp@pocaas-pro...` with access key, three compute instances deployed, logging tampered. Unknown: what data was in the S3 objects and GCP storage buckets that were accessed — requires L2 data classification review.
 
 **Q: How does this relate to TL-01?**
-> Same actor `mirage@pkwork.onmicrosoft.com`, same source IP `198.51.100.42`. TL-01 was an identity-layer attack via Okta — super admin escalation, MFA wipe, credential dumping on the endpoint. TL-04 is the cloud infrastructure layer — AWS and GCP compromise with persistent backdoor accounts. This confirms a campaign: the attacker owns identity (TL-01), endpoint (TL-01), and now cloud infrastructure (TL-04). Full environment compromise. L2 needs to treat these as a single coordinated campaign, not two separate incidents.
+> Same actor `mirage@pkwork.onmicrosoft.com`, same source IP `198.51.100.42`. TL-01 was an identity-layer attack via Okta — super admin escalation, MFA wipe, credential dumping on the endpoint. TL-04 shows the same actor moving laterally into cloud infrastructure after the initial identity compromise. This is not two separate incidents — it is one campaign. TL-01 was the entry point; TL-04 is the expansion. The full campaign scope requires both investigations to be reviewed together by L2.
 
-**Q: Why did you use `union` in the final KQL query instead of two separate queries?**
-> A unified timeline is stronger evidence than two parallel timelines. The `union` query normalizes both tables to the same four columns and sorts by TimeGenerated — this produces a single chronological view where the AWS-to-GCP pivot at the 4-minute mark is immediately visible. Two separate queries require a human to mentally correlate timestamps. One unified query makes the pivot undeniable.
+---
+
+*Investigation by Hurly Cabalan | Microsoft Sentinel 6-Vendor Training Lab | SC-200 Investigation Framework*
+*GitHub: [github.com/hurlycabalan/Soc-Investigation](https://github.com/hurlycabalan/Soc-Investigation)*

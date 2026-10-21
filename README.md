@@ -1,6 +1,8 @@
 # SOC Investigation Portfolio — Hurly Cabalan
 
-**Targeting:** SOC L1 Analyst roles in Qatar's cybersecurity market (MSSP focus)
+**Microsoft Certified: Security Operations Analyst Associate (SC-200)**
+
+**Targeting:** SOC L1 Analyst roles in Qatar and the GCC
 
 This portfolio demonstrates hands-on detection and investigation work across cloud, endpoint, identity, and network environments using Microsoft Sentinel. It covers alert triage, KQL-based log analysis, MITRE ATT&CK mapping, TP/FP decision-making, and incident documentation — the core skills required in a Tier 1 SOC role.
 
@@ -10,13 +12,13 @@ This portfolio demonstrates hands-on detection and investigation work across clo
 
 ## Featured Investigations
 
-These three investigations are the best representation of my analytical approach. Each includes a plain English summary, full KQL methodology, real query results, MITRE mapping, and hardening recommendations.
+These three investigations are the best representation of my analytical approach. Each includes a plain English summary, full KQL methodology, real query results, MITRE mapping, and hardening recommendations. The SC scenario folders are inside [SC-Series](https://github.com/hurlycabalan/Soc-Investigation/tree/main/SC-Series).
 
 | # | Investigation | Data Source | Key Techniques | Evidence |
 |---|---|---|---|---|
-| [SC-06](./SC-06-GCPCloudAttack/) | GCP Cloud Attack: Privilege Escalation, Cryptomining & Data Exfiltration | GCPAuditLogs | T1098.001 · T1562.008 · T1530 · T1552 · T1496 | ✅ Real KQL results + screenshots |
-| [SC-01](./SC-01-BruteForce/) | Brute Force Attack — Identity Investigation | Okta / Entra ID | T1110.001 · T1078 | Investigation documented |
-| [SC-03](./SC-03/) | Credential-Based Attack | Multi-vendor | T1110 · T1621 | Investigation documented |
+| SC-06 | GCP Cloud Attack: Privilege Escalation, Cryptomining & Data Exfiltration | GCPAuditLogs | T1098.001 · T1562.008 · T1530 · T1552 · T1496 | ✅ Real KQL results + screenshots |
+| SC-01 | Brute Force Attack — Identity Investigation | Okta / Entra ID | T1110.001 · T1078 | Investigation documented |
+| SC-03 | Credential-Based Attack | Multi-vendor | T1110 · T1621 | Investigation documented |
 
 ---
 
@@ -24,13 +26,13 @@ These three investigations are the best representation of my analytical approach
 
 Extended lab work demonstrating breadth across attack types and vendor environments.
 
-**SC Series — Single-Vendor Scenarios**
+**SC Series — Single-Vendor Scenarios** (folder: [SC-Series](https://github.com/hurlycabalan/Soc-Investigation/tree/main/SC-Series))
 
-| Folder | Scenario |
+| Scenario | Description |
 |---|---|
-| [SC-02](./SC-02/) | Endpoint detection and process investigation |
-| [SC-04](./SC-04/) | Network-based lateral movement |
-| [SC-05](./SC-05/) | Cloud workload detection |
+| SC-02 | Endpoint detection and process investigation |
+| SC-04 | Network-based lateral movement |
+| SC-05 | Cloud workload detection |
 
 **TL Series — Multi-Vendor Kill Chains**
 
@@ -38,11 +40,24 @@ Constructed kill chain scenarios mapping attacker progression across multiple se
 
 | Folder | Scenario | Vendors |
 |---|---|---|
-| [TL-01](./TL-Series/TL-01/) | Identity-first attack | Okta → CrowdStrike |
-| [TL-02](./TL-Series/TL-02/) | Endpoint-first attack | CrowdStrike → Palo Alto |
-| [TL-03](./TL-Series/TL-03/) | Network-first reverse | Palo Alto → CrowdStrike → Okta |
-| [TL-04](./TL-Series/TL-04/) | Cloud-only attack | AWS → GCP |
-| [TL-05](./TL-Series/TL-05/) | Full kill chain capstone | MailGuard → Okta → CrowdStrike → Palo Alto → AWS → GCP |
+| [TL-01](https://github.com/hurlycabalan/Soc-Investigation/tree/main/TL-Series/TL-01) | Identity-first attack | Okta → CrowdStrike |
+| [TL-02](https://github.com/hurlycabalan/Soc-Investigation/tree/main/TL-Series/TL-02) | Endpoint-first attack | CrowdStrike → Palo Alto |
+| [TL-03](https://github.com/hurlycabalan/Soc-Investigation/tree/main/TL-Series/TL-03) | Network-first reverse | Palo Alto → CrowdStrike → Okta |
+| [TL-04](https://github.com/hurlycabalan/Soc-Investigation/tree/main/TL-Series/TL-04) | Cloud-only attack | AWS → GCP |
+| [TL-05](https://github.com/hurlycabalan/Soc-Investigation/tree/main/TL-Series/TL-05) | Full kill chain capstone | MailGuard → Okta → CrowdStrike → Palo Alto → AWS → GCP |
+
+---
+
+## Repository Map
+
+| Item | What it is |
+|---|---|
+| [SC-Series](https://github.com/hurlycabalan/Soc-Investigation/tree/main/SC-Series) | Single-vendor investigation scenarios (SC-01 to SC-06) |
+| [TL-Series](https://github.com/hurlycabalan/Soc-Investigation/tree/main/TL-Series) | Multi-vendor kill chain scenarios (TL-01 to TL-05) |
+| [TL-04-AutomationRule](https://github.com/hurlycabalan/Soc-Investigation/tree/main/TL-04-AutomationRule) | Automation rule work related to TL-04 |
+| [KQL-Drills](https://github.com/hurlycabalan/Soc-Investigation/tree/main/KQL-Drills) | KQL practice drills |
+| [Exercises](https://github.com/hurlycabalan/Soc-Investigation/tree/main/Exercises) | Practice exercises |
+| [kql-queries.md](https://github.com/hurlycabalan/Soc-Investigation/blob/main/kql-queries.md) | KQL query reference |
 
 ---
 
@@ -78,19 +93,24 @@ Every investigation in this portfolio follows the same structured approach:
 
 | Credential | Status |
 |---|---|
+| Microsoft Certified: Security Operations Analyst Associate (SC-200) | ✅ Earned September 2026 (valid to September 2027) |
 | Google Cybersecurity Certificate | ✅ Complete |
 | Fortinet NSE 1 & 2 | ✅ Complete |
 | TryHackMe SOC L1 Path | ✅ Complete |
-| Microsoft SC-200 (Security Operations Analyst) | 🔄 In progress — exam target July 2026 |
+| Wazuh Challenge | ✅ Complete — 300/300, ranked 26 of 246 globally |
+
+**Currently learning:** Splunk SPL for SOC L1 triage.
 
 ---
 
 ## Background
 
-I bring 16 years of client-facing and data-driven work in Qatar across Sony, Vodafone, and Nestlé — building the communication, analytical, and documentation discipline that SOC work demands. I transitioned into cybersecurity through structured self-study, hands-on lab work, and this investigation portfolio, targeting Tier 1 analyst roles at MSSPs in Qatar.
+I bring 16 years of client-facing and data-driven work in Qatar across Sony, Vodafone, and Nestlé — building the communication, analytical, and documentation discipline that SOC work demands. I transitioned into cybersecurity through structured self-study, hands-on lab work, and this investigation portfolio, targeting Tier 1 analyst roles in Qatar and the GCC.
 
 I am available for a live demonstration of the Sentinel workspace and any investigation in this portfolio.
 
 ---
 
 **Skills demonstrated across this portfolio:** Alert triage · KQL log analysis · Cloud threat detection · Endpoint investigation · Identity attack detection · MITRE ATT&CK mapping · TP/FP decision-making · Incident documentation · Security hardening recommendations · Multi-vendor log correlation
+
+*Last updated: October 2026*
